@@ -155,16 +155,24 @@ class GitActivityCharts {
     public function sanitize_css($input) {
         return wp_strip_all_tags($input);
     }
-
     public function sanitize_accounts($input) {
         $sanitized = [];
         foreach ($input as $account) {
             $type = sanitize_text_field($account['type']);
+            // Handle repos: it could be a string (from form) or an array (from saved option)
+            $repos = $account['repos'];
+            if (is_string($repos)) {
+                $repos = array_filter(array_map('sanitize_text_field', explode(',', $repos)));
+            } elseif (is_array($repos)) {
+                $repos = array_filter(array_map('sanitize_text_field', $repos));
+            } else {
+                $repos = [];
+            }
             $sanitized[] = [
                 'type' => $type,
                 'username' => sanitize_text_field($account['username']),
                 'api_key' => sanitize_text_field($account['api_key']),
-                'repos' => array_filter(array_map('sanitize_text_field', explode(',', $account['repos']))),
+                'repos' => $repos,
                 'instance_url' => isset($account['instance_url']) ? esc_url_raw($account['instance_url']) : '',
                 'use_color_logo' => isset($account['use_color_logo']) ? (bool)$account['use_color_logo'] : false,
                 'text_color' => isset($account['text_color']) ? sanitize_hex_color($account['text_color']) : $this->providers[$type]['color'] ?? '#000000',
