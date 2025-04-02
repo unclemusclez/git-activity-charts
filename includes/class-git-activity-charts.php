@@ -65,7 +65,7 @@ class GitActivityCharts {
                     return ['data' => $commits];
                 },
                 'color' => '#0366d6',
-                'icon' => plugins_url('assets/github/github-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_FILE)
+                'icon' => plugins_url('assets/github/github-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_DIR)
             ],
             'gitlab' => [
                 'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
@@ -94,7 +94,7 @@ class GitActivityCharts {
                     return ['data' => $all_commits];
                 },
                 'color' => '#ff4500',
-                'icon' => plugins_url('assets/gitlab/gitlab-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_FILE)
+                'icon' => plugins_url('assets/gitlab/gitlab-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_DIR)
             ],
             'custom' => [
                 'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
