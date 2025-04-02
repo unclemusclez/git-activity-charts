@@ -242,9 +242,9 @@ class GitActivityCharts {
                 ?>
 
                 <h2><?php _e('Accounts', 'git-activity-charts'); ?></h2>
-                <p><?php _e('Add accounts from different Git providers. API keys are needed for private repositories and sometimes to avoid rate limits.', 'git-activity-charts'); ?></p>
-                <p><?php _e('For GitHub, activity shown is the user\'s contribution graph (requires API key with `read:user` and `repo` scopes for private data). For others, activity is aggregated commits per specified repository.', 'git-activity-charts'); ?></p>
-
+                <p><?php _e('Add accounts from different Git providers. API keys are needed for private repositories and to avoid rate limits. GraphQL APIs are used where available (GitHub, GitLab, Bitbucket).', 'git-activity-charts'); ?></p>
+                <p><?php _e('GitHub requires API key with `read:user` scope for contributions. GitLab requires `read_api` or `read_user`. Bitbucket often requires OAuth 2.0 or App Passwords with appropriate scopes (e.g., `repository:read`). Gitea uses REST.', 'git-activity-charts'); ?></p>
+        
                 <div id="accounts-container">
                     <?php if (!empty($accounts)) : ?>
                         <?php foreach ($accounts as $index => $account) : ?>
@@ -388,13 +388,13 @@ class GitActivityCharts {
     }
 
 
-    public function render_charts_shortcode($atts = []) {
+    public function render_charts_shortcode($atts = null ) {
         // Basic attributes (optional, could be used for filtering later)
-        $atts = shortcode_atts([
-            // 'include_types' => 'all', // e.g., 'github,gitlab'
-            // 'include_users' => 'all', // e.g., 'user1,user2'
-        ], $atts, 'git_activity_charts');
-
+        // $atts = shortcode_atts([
+        //     // 'include_types' => 'all', // e.g., 'github,gitlab'
+        //     // 'include_users' => 'all', // e.g., 'user1,user2'
+        // ], $atts, 'git_activity_charts');
+        $atts = $atts ?? [];
         $accounts = get_option('git_activity_accounts', []);
         if (empty($accounts)) {
              return '<p>' . __('No Git accounts configured. Please check the plugin settings.', 'git-activity-charts') . '</p>';
@@ -464,8 +464,7 @@ class GitActivityCharts {
                  $error_message = null;
 
                  if (false === $chart_data) {
-                     $fetch_result = $provider->fetch_activity($username, '', $api_key, $instance_url); // Repo name is ignored for GitHub user contributions
-
+                        $fetch_result = $provider->fetch_activity($username, $repo_name, $api_key, $instance_url);
                     if ($fetch_result === false || isset($fetch_result['error'])) {
                         $error_message = isset($fetch_result['error']) ? $fetch_result['error'] : __('Failed to fetch data.', 'git-activity-charts');
                          $chart_data = ['error' => $error_message];
