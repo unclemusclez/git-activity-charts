@@ -4,8 +4,8 @@ Plugin Name: Git Activity Charts
 Description: Display merged activity charts for GitHub, GitLab, Gitea, and Bitbucket repositories, supporting private repos and custom logos. Aggregates user contributions for GitHub and repository commits for others.
 Version: 0.0.0
 Author: Devin J. Dawson
-Author URI: https://unclemusclez.com
-License: GPLv2 or later
+Author URI: https://devinjdawson.com
+License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: git-activity-charts
 */
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GIT_ACTIVITY_CHARTS_VERSION', '0.1.0');
+define('GIT_ACTIVITY_CHARTS_VERSION', '0.0.0');
 define('GIT_ACTIVITY_CHARTS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GIT_ACTIVITY_CHARTS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', (__FILE__));

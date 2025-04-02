@@ -126,18 +126,18 @@ class GitActivityCharts {
         ];
     }
 
-    // public function add_admin_menu() {
-    //     add_options_page(
-    //         'Git Activity Charts Settings',
-    //         'Git Activity Charts',
-    //         'manage_options',
-    //         'git-activity-charts',
-    //         function() {
-    //             require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/admin-settings-page.php';
-    //             git_activity_charts_settings_page_html($this);
-    //         }
-    //     );
-    // }
+    public function add_admin_menu() {
+        add_options_page(
+            'Git Activity Charts Settings',
+            'Git Activity Charts',
+            'manage_options',
+            'git-activity-charts',
+            function() {
+                require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/admin-settings-page.php';
+                git_activity_charts_settings_page_html($this);
+            }
+        );
+    }
 
     public function register_settings() {
         register_setting('git_activity_options', 'git_activity_accounts', [
