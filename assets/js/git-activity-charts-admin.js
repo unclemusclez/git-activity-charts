@@ -16,23 +16,24 @@ jQuery(document).ready(function ($) {
     // Show/hide Repos field (needed for all except GitHub user contributions)
     if (providerType === "github") {
       reposField.hide();
-      reposField.find("input").prop("required", false); // Not required for GitHub user
+      reposField.find("input").prop("required", false);
     } else {
       reposField.show();
-      // Optional: make required for others if desired
       reposField.find("input").prop("required", true);
     }
 
-    // Show/hide Instance URL field (needed for GitLab/Gitea self-hosted)
-    if (providerType === "gitlab" || providerType === "gitea") {
+    // Show/hide Instance URL field (needed for GitLab, Gitea, or custom self-hosted)
+    if (
+      providerType === "gitlab" ||
+      providerType === "gitea" ||
+      providerType === "custom"
+    ) {
       instanceUrlField.show();
-      // Instance URL isn't strictly *required* if using gitlab.com,
-      // but prompt might be useful. Let's not make it formally required.
-      // instanceUrlField.find('input').prop('required', true);
     } else {
       instanceUrlField.hide();
       instanceUrlField.find("input").prop("required", false);
     }
+
     // Update the account header indicator
     accountGroup
       .find(".account-type-indicator")
@@ -43,21 +44,18 @@ jQuery(document).ready(function ($) {
   $("#add-account").on("click", function () {
     const accountsContainer = $("#accounts-container");
     const template = $("#account-template").html();
-    const index = accountsContainer.find(".account-group").length; // Find next index
-    const newAccountHtml = template.replace(/__INDEX__/g, index); // Replace placeholder index
+    const index = accountsContainer.find(".account-group").length;
+    const newAccountHtml = template.replace(/__INDEX__/g, index);
 
-    // Remove "No accounts" message if present
     $("#no-accounts-msg").remove();
-
     accountsContainer.append(newAccountHtml);
 
-    // Initialize color picker for the new account
     const newGroup = accountsContainer.find(".account-group").last();
     initColorPicker(newGroup.find(".color-picker"));
-    toggleProviderFields(newGroup); // Ensure correct fields are shown initially
+    toggleProviderFields(newGroup);
   });
 
-  // Remove Account button click handler (delegated)
+  // Remove Account button click handler
   $("#accounts-container").on("click", ".remove-account", function () {
     $(this).closest(".account-group").remove();
     if ($("#accounts-container .account-group").length === 0) {
@@ -67,7 +65,7 @@ jQuery(document).ready(function ($) {
     }
   });
 
-  // Toggle API Key visibility (delegated)
+  // Toggle API Key visibility
   $("#accounts-container").on("click", ".toggle-api-key", function () {
     const button = $(this);
     const input = button.siblings(".api-key-input");
@@ -80,7 +78,7 @@ jQuery(document).ready(function ($) {
     }
   });
 
-  // Handle provider type change to show/hide relevant fields (delegated)
+  // Handle provider type change to show/hide relevant fields
   $("#accounts-container").on("change", ".account-type-select", function () {
     const accountGroup = $(this).closest(".account-group");
     toggleProviderFields(accountGroup);

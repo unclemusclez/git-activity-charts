@@ -14,7 +14,6 @@ function git_activity_charts_settings_page_html($plugin) {
     }
     ?>
     <div class="wrap git-activity-settings">
-        <h1><?php _e('Git Activity Charts Settings', 'git-activity-charts'); ?></h1>
         <form method="post" action="options.php">
             <?php
             settings_fields('git_activity_options');
@@ -38,6 +37,8 @@ function git_activity_charts_settings_page_html($plugin) {
                                         <select name="git_activity_accounts[<?php echo esc_attr($index); ?>][type]" class="account-type-select">
                                             <option value="github" <?php selected($account['type'], 'github'); ?>>GitHub</option>
                                             <option value="gitlab" <?php selected($account['type'], 'gitlab'); ?>>GitLab</option>
+                                            <option value="gitea" <?php selected($account['type'], 'gitea'); ?>>Gitea</option>
+                                            <option value="bitbucket" <?php selected($account['type'], 'bitbucket'); ?>>Bitbucket</option>
                                             <option value="custom" <?php selected($account['type'], 'custom'); ?>>Custom</option>
                                         </select>
                                     </td>
@@ -60,14 +61,14 @@ function git_activity_charts_settings_page_html($plugin) {
                                     <th scope="row"><label><?php _e('Repositories', 'git-activity-charts'); ?></label></th>
                                     <td>
                                         <input type="text" name="git_activity_accounts[<?php echo esc_attr($index); ?>][repos]" value="<?php echo esc_attr(implode(',', $account['repos'] ?? [])); ?>" placeholder="<?php _e('repo1, repo2, another-repo', 'git-activity-charts'); ?>" class="large-text" />
-                                        <p class="description"><?php _e('Comma-separated list of repository names (required for GitLab).', 'git-activity-charts'); ?></p>
+                                        <p class="description"><?php _e('Comma-separated list of repository names (required for GitLab, Gitea, Bitbucket).', 'git-activity-charts'); ?></p>
                                     </td>
                                 </tr>
                                 <tr class="account-field instance-url-field">
                                     <th scope="row"><label><?php _e('Instance URL', 'git-activity-charts'); ?></label></th>
                                     <td>
                                         <input type="url" name="git_activity_accounts[<?php echo esc_attr($index); ?>][instance_url]" value="<?php echo esc_attr($account['instance_url'] ?? ''); ?>" placeholder="<?php _e('e.g., https://saltrivercanyon.com', 'git-activity-charts'); ?>" class="regular-text"/>
-                                        <p class="description"><?php _e('Required for self-hosted GitLab or custom instances.', 'git-activity-charts'); ?></p>
+                                        <p class="description"><?php _e('Required for self-hosted GitLab, Gitea, or custom instances.', 'git-activity-charts'); ?></p>
                                     </td>
                                 </tr>
                                 <tr>
@@ -127,6 +128,8 @@ function git_activity_charts_settings_page_html($plugin) {
                         <select name="git_activity_accounts[__INDEX__][type]" class="account-type-select">
                             <option value="github">GitHub</option>
                             <option value="gitlab">GitLab</option>
+                            <option value="gitea">Gitea</option>
+                            <option value="bitbucket">Bitbucket</option>
                             <option value="custom">Custom</option>
                         </select>
                     </td>
@@ -149,14 +152,14 @@ function git_activity_charts_settings_page_html($plugin) {
                     <th scope="row"><label><?php _e('Repositories', 'git-activity-charts'); ?></label></th>
                     <td>
                         <input type="text" name="git_activity_accounts[__INDEX__][repos]" placeholder="<?php _e('repo1, repo2, another-repo', 'git-activity-charts'); ?>" class="large-text" />
-                        <p class="description"><?php _e('Comma-separated list of repository names (required for GitLab).', 'git-activity-charts'); ?></p>
+                        <p class="description"><?php _e('Comma-separated list of repository names (required for GitLab, Gitea, Bitbucket).', 'git-activity-charts'); ?></p>
                     </td>
                 </tr>
                 <tr class="account-field instance-url-field">
                     <th scope="row"><label><?php _e('Instance URL', 'git-activity-charts'); ?></label></th>
                     <td>
                         <input type="url" name="git_activity_accounts[__INDEX__][instance_url]" placeholder="<?php _e('e.g., https://saltrivercanyon.com', 'git-activity-charts'); ?>" class="regular-text"/>
-                        <p class="description"><?php _e('Required for self-hosted GitLab or custom instances.', 'git-activity-charts'); ?></p>
+                        <p class="description"><?php _e('Required for self-hosted GitLab, Gitea, or custom instances.', 'git-activity-charts'); ?></p>
                     </td>
                 </tr>
                 <tr>
