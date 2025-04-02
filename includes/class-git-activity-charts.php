@@ -71,15 +71,137 @@ class GitActivityCharts {
             // 'custom' => new CustomProvider(), // If you create one
         ];
     }
+    private function init_providers() {
+        $this->providers = [
+            'github' => [
+                'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
+                    $query = 'query($userName: String!) {
+                        user(login: $userName) {
+                            contributionsCollection {
+                                contributionCalendar {
+                                    totalContributions
+                                    weeks {
+                                        contributionDays {
+                                            contributionCount
+                                            date
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }';
+                    $variables = ['userName' => $username];
+                    $headers = [
+                        'Authorization' => "Bearer {$api_key}",
+                        'Content-Type' => 'application/json'
+                    ];
+                    $response = wp_remote_post('https://api.github.com/graphql', [
+                        'headers' => $headers,
+                        'body' => json_encode(['query' => $query, 'variables' => $variables])
+                    ]);
+                    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+                        return ['data' => false];
+                    }
+                    $body = json_decode(wp_remote_retrieve_body($response), true);
+                    $contributions = $body['data']['user']['contributionsCollection']['contributionCalendar']['weeks'] ?? [];
+                    $commits = [];
+                    foreach ($contributions as $week) {
+                        foreach ($week['contributionDays'] as $day) {
+                            if ($day['contributionCount'] > 0) {
+                                $commits[] = [
+                                    'message' => "Contributed {$day['contributionCount']} times",
+                                    'committed_date' => $day['date'],
+                                    'repo' => 'GitHub Activity',
+                                    'repo_url' => "https://github.com/{$username}"
+                                ];
+                            }
+                        }
+                    }
+                    return ['data' => $commits];
+                },
+                'color' => '#0366d6',
+                'icon' => plugins_url('assets/github/github-mark-dark.svg', __FILE__)
+            ],
+            'gitlab' => [
+                'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
+                    $base_url = $instance_url ?: 'https://gitlab.com';
+                    $all_commits = [];
+                    foreach ($repos as $repo) {
+                        $project_url = "{$base_url}/api/v4/projects/" . urlencode("{$username}/{$repo}");
+                        $headers = $api_key ? ['Private-Token' => $api_key] : [];
+                        $repo_response = wp_remote_get($project_url, ['headers' => $headers]);
+                        $repo_url = is_wp_error($repo_response) ? "{$base_url}/{$username}/{$repo}" : json_decode(wp_remote_retrieve_body($repo_response), true)['web_url'] ?? "{$base_url}/{$username}/{$repo}";
 
+                        $commits_url = "{$project_url}/repository/commits?per_page=100";
+                        $response = wp_remote_get($commits_url, ['headers' => $headers]);
+                        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+                            continue;
+                        }
+                        $commits = json_decode(wp_remote_retrieve_body($response), true);
+                        if (!$commits) continue;
+
+                        foreach ($commits as $commit) {
+                            $commit['repo_url'] = $repo_url;
+                            $commit['repo'] = $repo;
+                            $all_commits[] = $commit;
+                        }
+                    }
+                    return ['data' => $all_commits];
+                },
+                'color' => '#ff4500',
+                'icon' => plugins_url('assets/gitlab/gitlab-mark-dark.svg', __FILE__)
+            ],
+            'custom' => [
+                'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
+                    if (!$instance_url) return ['data' => false];
+                    $base_url = rtrim($instance_url, '/');
+                    $all_commits = [];
+                    foreach ($repos as $repo) {
+                        $repo_url = "{$base_url}/{$username}/{$repo}";
+                        $commits_url = "{$base_url}/api/v1/repos/{$username}/{$repo}/commits?limit=100";
+                        $headers = $api_key ? ['Authorization' => "token {$api_key}"] : [];
+                        $response = wp_remote_get($commits_url, ['headers' => $headers]);
+                        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+                            continue;
+                        }
+                        $commits = json_decode(wp_remote_retrieve_body($response), true);
+                        if (!$commits) continue;
+
+                        foreach ($commits as $commit) {
+                            $commit['repo_url'] = $repo_url;
+                            $commit['repo'] = $repo;
+                            $all_commits[] = $commit;
+                        }
+                    }
+                    return ['data' => $all_commits];
+                },
+                'color' => '#000000',
+                'icon' => null // Will be set dynamically based on instance_url
+            ]
+        ];
+    }
     public function add_admin_menu() {
         add_options_page(
-            __('Git Activity Charts Settings', 'git-activity-charts'),
-            __('Git Activity Charts', 'git-activity-charts'),
+            'Git Activity Charts Settings',
+            'Git Activity Charts',
             'manage_options',
             'git-activity-charts',
-            [$this, 'settings_page_html']
+            [$this, 'settings_page']
         );
+    }
+
+    public function register_settings() {
+        register_setting('git_activity_options', 'git_activity_accounts', [
+            'sanitize_callback' => [$this, 'sanitize_accounts']
+        ]);
+        register_setting('git_activity_options', 'git_activity_show_public_only', [
+            'type' => 'boolean',
+            'default' => false
+        ]);
+        register_setting('git_activity_options', 'git_activity_custom_css', [
+            'sanitize_callback' => 'sanitize_textarea_field',
+            'default' => "#git-charts .chart-container {\n    margin-bottom: 2em;\n    padding: 1em;\n    border: 1px solid #ddd;\n    border-radius: 5px;\n}\n#git-charts h3 {\n    display: flex;\n    align-items: center;\n    gap: 0.5em;\n    margin-bottom: 1em;\n}\n#git-charts .activity-feed {\n    margin-top: 1em;\n}\n#git-charts .activity-feed .commit {\n    display: flex;\n    align-items: center;\n    gap: 0.5em;\n    margin-bottom: 0.5em;\n}\n#git-charts .activity-feed .commit img {\n    width: 16px;\n    height: 16px;\n}\n#git-charts .activity-feed .commit .time-ago {\n    margin-left: auto;\n    color: #666;\n    font-size: 0.9em;\n}\n.git-activity-settings .button-link-delete {\n    color: #dc3232 !important;\n    text-decoration: none;\n    border: none;\n    background: none;\n    cursor: pointer;\n}\n.git-activity-settings .button-link-delete:hover {\n    color: #a00 !important;\n    text-decoration: underline;\n}\n.git-activity-settings .form-table {\n    margin-top: 0;\n}"
+        ]);
     }
 
     public function register_settings() {
@@ -112,48 +234,17 @@ class GitActivityCharts {
 
     public function sanitize_accounts($input) {
         $sanitized = [];
-        if (!is_array($input)) {
-            return $sanitized;
-        }
-
         foreach ($input as $account) {
-            if (!is_array($account) || empty($account['type']) || empty($account['username'])) {
-                continue; // Skip invalid entries
-            }
-
             $type = sanitize_text_field($account['type']);
-            if (!array_key_exists($type, $this->providers)) {
-                continue; // Skip unsupported provider types
-            }
-
-            $provider = $this->providers[$type];
-            $repos_raw = isset($account['repos']) ? $account['repos'] : '';
-            $clean_repos = array_filter(array_map('trim', explode(',', $repos_raw)));
-            $sanitized_repos = array_map('sanitize_text_field', $clean_repos); // Sanitize each repo name
-
-             // Basic URL validation
-            $instance_url = '';
-            if (isset($account['instance_url']) && !empty($account['instance_url'])) {
-                $instance_url = esc_url_raw(trim($account['instance_url']), ['http', 'https']);
-                 // Remove trailing slash for consistency
-                $instance_url = rtrim($instance_url, '/');
-            }
-
-             // Ensure text color is a valid hex color, fallback to provider default
-            $text_color = isset($account['text_color']) ? sanitize_hex_color($account['text_color']) : '';
-            if (!$text_color) {
-                 $text_color = $provider->get_color(); // Get default color if invalid or empty
-            }
-
-
             $sanitized[] = [
-                'type'           => $type,
-                'username'       => sanitize_text_field($account['username']),
-                'api_key'        => sanitize_text_field($account['api_key']), // API keys are sensitive, basic sanitization
-                'repos'          => $sanitized_repos,
-                'instance_url'   => $instance_url,
+                'type' => $type,
+                'username' => sanitize_text_field($account['username']),
+                'api_key' => sanitize_text_field($account['api_key']),
+                'repos' => array_filter(array_map('sanitize_text_field', explode(',', $account['repos']))),
+                'instance_url' => isset($account['instance_url']) ? esc_url_raw($account['instance_url']) : '',
                 'use_color_logo' => isset($account['use_color_logo']) ? (bool)$account['use_color_logo'] : false,
-                'text_color'     => $text_color,
+                'text_color' => isset($account['text_color']) ? sanitize_hex_color($account['text_color']) : $this->providers[$type]['color'] ?? '#000000',
+                'custom_logo' => isset($account['custom_logo']) ? esc_url_raw($account['custom_logo']) : ''
             ];
         }
         return $sanitized;
@@ -367,27 +458,144 @@ class GitActivityCharts {
 
 
     public function show_admin_notices() {
-        // Check if we are on our settings page or if there are general errors to show
-        $screen = get_current_screen();
-        if ($screen && $screen->id === 'settings_page_git-activity-charts') {
-            // Check for errors stored during fetch/render (if any are stored persistently)
-            $errors = get_transient('git_activity_admin_errors');
-            if ($errors && is_array($errors)) {
-                foreach ($errors as $error) {
-                    echo "<div class='notice notice-error is-dismissible'><p>" . esc_html($error) . "</p></div>";
+        $accounts = get_option('git_activity_accounts', []);
+        foreach ($accounts as $account) {
+            foreach ($account['repos'] as $repo) {
+                $cache_key = "git_activity_{$account['type']}_{$account['username']}_{$repo}";
+                if ($error = get_option("git_activity_error_{$cache_key}")) {
+                    echo "<div class='notice notice-error is-dismissible'><p>{$error}</p></div>";
                 }
-                delete_transient('git_activity_admin_errors'); // Clear after displaying
             }
-            // Display saved message
-             if (isset($_GET['settings-updated']) && $_GET['settings-updated']) {
-                 add_settings_error('git_activity_options', 'settings_updated', __('Settings saved.', 'git-activity-charts'), 'updated');
-            }
-            settings_errors('git_activity_options');
-
         }
     }
+    private function get_commit_date($commit, $date_key) {
+        return isset($commit[$date_key]) ? strtotime($commit[$date_key]) : (isset($commit['created_at']) ? strtotime($commit['created_at']) : false);
+    }
 
+    private function get_fallback_repo_url($type, $username, $repo, $instance_url) {
+        switch ($type) {
+            case 'github':
+                return "https://github.com/{$username}/{$repo}";
+            case 'gitlab':
+                return ($instance_url ?: 'https://gitlab.com') . "/{$username}/{$repo}";
+            case 'custom':
+                return $instance_url ? "{$instance_url}/{$username}/{$repo}" : '#';
+            default:
+                return '#';
+        }
+    }
+    public function render_charts($atts) {
+        if (!is_user_logged_in() || !current_user_can('manage_options')) {
+            return '<p>Please log in to view activity charts.</p>';
+        }
 
+        wp_enqueue_script('cal-heatmap', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.min.js', [], null, true);
+        wp_enqueue_style('cal-heatmap-css', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.css', [], null);
+        $custom_css = get_option('git_activity_custom_css', '');
+        if ($custom_css) {
+            wp_add_inline_style('cal-heatmap-css', $custom_css);
+        }
+
+        $accounts = get_option('git_activity_accounts', []);
+        $show_public_only = get_option('git_activity_show_public_only', false);
+        $all_commits = [];
+        $heatmap_data = [];
+        $current_time = time();
+
+        foreach ($accounts as $account) {
+            $type = $account['type'];
+            $username = $account['username'];
+            $api_key = $account['api_key'];
+            $instance_url = $account['instance_url'];
+            $use_color_logo = $account['use_color_logo'];
+            $custom_logo = $account['custom_logo'];
+            $repos = $account['repos'];
+            $provider = $this->providers[$type] ?? null;
+
+            if (!$provider) continue;
+            if ($show_public_only && empty($api_key)) continue;
+
+            $result = $provider['fetch']($username, $api_key, $instance_url, $repos);
+            if ($result['data']) {
+                $commits = $result['data'];
+            } else {
+                if (current_user_can('manage_options')) {
+                    $error_msg = "Failed to fetch data for {$username} ({$type}). Check API key or repository access.";
+                    update_option("git_activity_error_{$type}_{$username}", $error_msg);
+                }
+                continue;
+            }
+
+            $icon = $custom_logo ?: ($type === 'custom' ? ($instance_url . '/favicon.ico') : $provider['icon']);
+            foreach ($commits as $commit) {
+                $date = $this->get_commit_date($commit, $type === 'github' ? 'committed_date' : 'committed_date');
+                if (!$date) continue;
+
+                $all_commits[] = [
+                    'date' => $date,
+                    'message' => $commit['message'] ?? "Contribution",
+                    'repo' => $commit['repo'] ?? $username,
+                    'type' => $type,
+                    'username' => $username,
+                    'repo_url' => $commit['repo_url'] ?? $this->get_fallback_repo_url($type, $username, $commit['repo'] ?? $username, $instance_url),
+                    'logo' => $icon
+                ];
+
+                // Aggregate for heatmap
+                $day = date('Y-m-d', $date);
+                $heatmap_data[$day] = ($heatmap_data[$day] ?? 0) + 1;
+            }
+        }
+
+        // Sort commits by date (newest first)
+        usort($all_commits, function($a, $b) {
+            return $b['date'] - $a['date'];
+        });
+
+        // Prepare heatmap data
+        $heatmap_json = [];
+        foreach ($heatmap_data as $date => $count) {
+            $heatmap_json[] = ['date' => $date, 'value' => $count];
+        }
+
+        // Render merged heatmap and activity feed
+        $output = '<div id="git-charts">';
+        $output .= "<div class='chart-container'>";
+        $output .= "<h3>Activity Across All Repos</h3>";
+        $output .= "<div id='heatmap'></div>";
+        $output .= "<script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var cal = new CalHeatmap();
+                cal.paint({
+                    data: " . json_encode($heatmap_json) . ",
+                    date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
+                    range: 12,
+                    domain: { type: 'month', label: { text: 'MMM', position: 'top' } },
+                    subDomain: { type: 'day', width: 10, height: 10 },
+                    scale: { color: { range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], type: 'linear' } },
+                    itemSelector: '#heatmap'
+                });
+            });
+        </script>";
+
+        // Activity feed
+        $output .= "<div class='activity-feed'>";
+        $output .= "<h4>Recent Activity</h4>";
+        foreach (array_slice($all_commits, 0, 10) as $commit) {
+            $time_ago = human_time_diff($commit['date'], $current_time) . ' ago';
+            $output .= "<div class='commit'>";
+            $output .= "<img src='{$commit['logo']}' alt='{$commit['type']} mark' width='16' height='16'>";
+            $output .= "<span>Pushed to <a href='{$commit['repo_url']}'>{$commit['repo']}</a> on {$commit['type']} ({$commit['username']})</span>";
+            $output .= "<span>" . esc_html(substr($commit['message'], 0, 50)) . (strlen($commit['message']) > 50 ? '...' : '') . "</span>";
+            $output .= "<span class='time-ago'>{$time_ago}</span>";
+            $output .= "</div>";
+        }
+        $output .= "</div>";
+        $output .= "</div>";
+        $output .= '</div>';
+
+        return $output;
+    }
     public function render_charts_shortcode($atts = null ) {
         // Basic attributes (optional, could be used for filtering later)
         // $atts = shortcode_atts([
@@ -637,4 +845,6 @@ class GitActivityCharts {
                 return '#';
         }
     }
-} // End Class
+}
+
+new GitActivityCharts();
