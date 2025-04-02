@@ -6,7 +6,7 @@ Version: 0.0.0
 Author: Devin J. Dawson
 Author URI: https://devinjdawson.com
 License: GPLv3
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Text Domain: git-activity-charts
 */
 
@@ -16,10 +16,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GIT_ACTIVITY_CHARTS_VERSION', '0.1.0');
+define('GIT_ACTIVITY_CHARTS_VERSION', '0.0.0');
 define('GIT_ACTIVITY_CHARTS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GIT_ACTIVITY_CHARTS_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', __FILE__));
+define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', (__FILE__));
 
 // Debug: Log when the plugin file is loaded
 error_log("Git Activity Charts plugin file loaded: " . __FILE__);
