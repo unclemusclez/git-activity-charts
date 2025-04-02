@@ -86,9 +86,14 @@ function git_activity_charts_settings_page_html($plugin) {
                                             </label>
                                             <br>
                                             <label style="margin-top: 10px; display: inline-block;">
-                                                <?php _e('Custom Logo URL:', 'git-activity-charts'); ?>
-                                                <input type="url" name="git_activity_accounts[<?php echo esc_attr($index); ?>][custom_logo]" value="<?php echo esc_attr($account['custom_logo'] ?? ''); ?>" placeholder="<?php _e('e.g., https://example.com/logo.svg', 'git-activity-charts'); ?>" class="regular-text"/>
-                                                <p class="description"><?php _e('Optional SVG logo URL. For custom instances, defaults to favicon if not provided.', 'git-activity-charts'); ?></p>
+                                                <?php _e('Custom Logo:', 'git-activity-charts'); ?>
+                                                <input type="text" name="git_activity_accounts[<?php echo esc_attr($index); ?>][custom_logo]" value="<?php echo esc_attr($account['custom_logo'] ?? ''); ?>" class="custom-logo-url regular-text" readonly />
+                                                <input type="button" class="button custom-logo-upload-button" value="<?php _e('Upload/Select Logo', 'git-activity-charts'); ?>" />
+                                                <input type="button" class="button custom-logo-remove-button" value="<?php _e('Remove Logo', 'git-activity-charts'); ?>" <?php echo empty($account['custom_logo']) ? 'style="display:none;"' : ''; ?> />
+                                                <p class="description"><?php _e('Upload or select a logo from the media library. Overrides the default provider logo.', 'git-activity-charts'); ?></p>
+                                                <?php if (!empty($account['custom_logo'])) : ?>
+                                                    <img src="<?php echo esc_url($account['custom_logo']); ?>" class="custom-logo-preview" style="max-width: 100px; max-height: 100px; margin-top: 10px;" />
+                                                <?php endif; ?>
                                             </label>
                                         </fieldset>
                                     </td>
@@ -177,9 +182,11 @@ function git_activity_charts_settings_page_html($plugin) {
                             </label>
                             <br>
                             <label style="margin-top: 10px; display: inline-block;">
-                                <?php _e('Custom Logo URL:', 'git-activity-charts'); ?>
-                                <input type="url" name="git_activity_accounts[__INDEX__][custom_logo]" placeholder="<?php _e('e.g., https://example.com/logo.svg', 'git-activity-charts'); ?>" class="regular-text"/>
-                                <p class="description"><?php _e('Optional SVG logo URL. For custom instances, defaults to favicon if not provided.', 'git-activity-charts'); ?></p>
+                                <?php _e('Custom Logo:', 'git-activity-charts'); ?>
+                                <input type="text" name="git_activity_accounts[__INDEX__][custom_logo]" value="" class="custom-logo-url regular-text" readonly />
+                                <input type="button" class="button custom-logo-upload-button" value="<?php _e('Upload/Select Logo', 'git-activity-charts'); ?>" />
+                                <input type="button" class="button custom-logo-remove-button" value="<?php _e('Remove Logo', 'git-activity-charts'); ?>" style="display:none;" />
+                                <p class="description"><?php _e('Upload or select a logo from the media library. Overrides the default provider logo.', 'git-activity-charts'); ?></p>
                             </label>
                         </fieldset>
                     </td>

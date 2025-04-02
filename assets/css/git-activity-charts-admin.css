@@ -1,17 +1,64 @@
-/* Optional: Add specific styles only for the admin page */
+.git-activity-settings .account-group {
+  border: 1px solid #ccd0d4;
+  padding: 0 1.5em 1.5em 1.5em;
+  margin-bottom: 1.5em;
+  background: #fff;
+  border-radius: 4px;
+}
+.git-activity-settings .account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8em 0;
+  margin-bottom: 1em;
+  border-bottom: 1px solid #eee;
+}
+.git-activity-settings .account-header h4 {
+  margin: 0;
+  font-size: 1.1em;
+}
+.git-activity-settings .account-type-indicator {
+  font-weight: normal;
+  color: #555;
+  background-color: #eee;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  margin-left: 8px;
+}
+.git-activity-settings .form-table th {
+  width: 150px;
+}
+.git-activity-settings .form-table td .description {
+  font-size: 0.85em;
+  color: #666;
+}
+.git-activity-settings .wp-picker-container {
+  display: inline-block;
+  margin-left: 5px;
+}
+.git-activity-settings .toggle-api-key {
+  min-width: 50px;
+}
 .git-activity-settings .button-link-delete {
-    color: #dc3232 !important; /* Make remove button red */
-    text-decoration: none;
-    border: none;
-    background: none;
-    cursor: pointer;
+  color: #dc3232 !important;
+  text-decoration: none;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 .git-activity-settings .button-link-delete:hover {
-    color: #a00 !important;
-    text-decoration: underline;
+  color: #a00 !important;
+  text-decoration: underline;
 }
-
-/* Adjust spacing or alignment if needed */
 .git-activity-settings .form-table {
-    margin-top: 0; /* Reduce space above table within group */
+  margin-top: 0;
+}
+.git-activity-settings .custom-logo-upload-button,
+.git-activity-settings .custom-logo-remove-button {
+  margin-left: 5px;
+}
+.git-activity-settings .custom-logo-preview {
+  display: block;
+  margin-top: 10px;
 }

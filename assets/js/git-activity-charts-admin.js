@@ -84,6 +84,65 @@ jQuery(document).ready(function ($) {
     toggleProviderFields(accountGroup);
   });
 
+  // Handle custom logo upload
+  $("#accounts-container").on(
+    "click",
+    ".custom-logo-upload-button",
+    function (e) {
+      e.preventDefault();
+      const button = $(this);
+      const input = button.siblings(".custom-logo-url");
+      const removeButton = button.siblings(".custom-logo-remove-button");
+      const preview = button.siblings(".custom-logo-preview");
+
+      // Create the media frame
+      const frame = wp.media({
+        title: "Select or Upload Logo",
+        button: {
+          text: "Use this logo",
+        },
+        multiple: false,
+      });
+
+      // When an image is selected, run a callback
+      frame.on("select", function () {
+        const attachment = frame.state().get("selection").first().toJSON();
+        input.val(attachment.url);
+        removeButton.show();
+        if (preview.length) {
+          preview.attr("src", attachment.url);
+        } else {
+          button.after(
+            '<img src="' +
+              attachment.url +
+              '" class="custom-logo-preview" style="max-width: 100px; max-height: 100px; margin-top: 10px;" />'
+          );
+        }
+      });
+
+      // Open the media frame
+      frame.open();
+    }
+  );
+
+  // Handle custom logo removal
+  $("#accounts-container").on(
+    "click",
+    ".custom-logo-remove-button",
+    function (e) {
+      e.preventDefault();
+      const button = $(this);
+      const input = button.siblings(".custom-logo-url");
+      const preview = button.siblings(".custom-logo-preview");
+
+      input.val("");
+      button.hide();
+      if (preview.length) {
+        preview.remove();
+      }
+    }
+  );
+
   // Initial setup for existing accounts on page load
   $(".account-group").each(function () {
     toggleProviderFields($(this));

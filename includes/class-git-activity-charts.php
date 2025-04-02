@@ -186,12 +186,14 @@ class GitActivityCharts {
         if ('settings_page_git-activity-charts' !== $hook) {
             return;
         }
+        // Enqueue WordPress media uploader
+        wp_enqueue_media();
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script('wp-color-picker');
         wp_enqueue_script(
             'git-activity-charts-admin',
             GIT_ACTIVITY_CHARTS_PLUGIN_URL . 'assets/js/git-activity-charts-admin.js',
-            ['jquery', 'wp-color-picker'],
+            ['jquery', 'wp-color-picker', 'media-upload'],
             GIT_ACTIVITY_CHARTS_VERSION,
             true
         );
@@ -394,8 +396,8 @@ class GitActivityCharts {
             $username = $account['username'];
             $api_key = $account['api_key'];
             $instance_url = $account['instance_url'];
-            $use_color_logo = $account['use_color_logo'];
-            $custom_logo = $account['custom_logo'];
+            $use_color_logo = isset($account['use_color_logo']) ? (bool)$account['use_color_logo'] : false;
+            $custom_logo = isset($account['custom_logo']) ? $account['custom_logo'] : '';
             $repos = $account['repos'];
             $provider = $this->providers[$type] ?? null;
 
@@ -412,7 +414,27 @@ class GitActivityCharts {
                 continue;
             }
 
-            $icon = $custom_logo ?: ($type === 'custom' ? ($instance_url . '/favicon.ico') : $provider['icon']);
+            // Determine the logo to use
+            $icon = $custom_logo; // Use custom logo if set
+            if (!$icon) {
+                // No custom logo; use provider logo based on use_color_logo setting
+                if ($type === 'custom') {
+                    // For custom providers without a custom logo, use a default placeholder or skip
+                    $icon = plugins_url('assets/images/default-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_FILE); // Add a default icon if desired
+                } else {
+                    $logo_variant = $use_color_logo ? 'color' : 'dark';
+                    $logo_filename = "{$type}-mark-{$logo_variant}.svg";
+                    $logo_path = "assets/images/{$logo_filename}";
+                    // Check if the preferred variant exists; fall back to the other variant
+                    if (!file_exists(GIT_ACTIVITY_CHARTS_PLUGIN_DIR . $logo_path)) {
+                        $logo_variant = ($logo_variant === 'color') ? 'dark' : 'color';
+                        $logo_filename = "{$type}-mark-{$logo_variant}.svg";
+                        $logo_path = "assets/images/{$logo_filename}";
+                    }
+                    $icon = plugins_url($logo_path, GIT_ACTIVITY_CHARTS_PLUGIN_FILE);
+                }
+            }
+
             foreach ($commits as $commit) {
                 $date = $this->get_commit_date($commit, $type === 'github' ? 'committed_date' : 'committed_date');
                 if (!$date) continue;
