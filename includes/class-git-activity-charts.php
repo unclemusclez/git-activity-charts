@@ -132,10 +132,10 @@ class GitActivityCharts {
             'Git Activity Charts',
             'manage_options',
             'git-activity-charts',
-            // function() {
-            //     require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/admin-settings-page.php';
-            //     git_activity_charts_settings_page_html($this);
-            // }
+            function() {
+                require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/admin-settings-page.php';
+                git_activity_charts_settings_page_html($this);
+            }
         );
     }
 
