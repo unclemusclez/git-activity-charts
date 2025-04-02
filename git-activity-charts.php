@@ -10,6 +10,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: git-activity-charts
 */
 
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -17,7 +18,7 @@ if (!defined('ABSPATH')) {
 define('GIT_ACTIVITY_CHARTS_VERSION', '0.1.0');
 define('GIT_ACTIVITY_CHARTS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GIT_ACTIVITY_CHARTS_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', __FILE__);
+define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', __FILE__));
 
 // Include necessary files
 require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/class-git-activity-charts.php';
@@ -25,7 +26,11 @@ require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/admin-settings-page.php'
 
 // Initialize the plugin
 function git_activity_charts_init() {
-    new GitActivityCharts();
+    static $instance = null;
+    if (null === $instance) {
+        $instance = new GitActivityCharts();
+    }
+    return $instance;
 }
 add_action('plugins_loaded', 'git_activity_charts_init');
 
@@ -41,7 +46,6 @@ function git_activity_charts_activate() {
         update_option('git_activity_custom_css', '');
     }
 }
-
 function git_activity_charts_deactivate() {
     // Optional: Consider clearing all transients on deactivation
     // global $wpdb;
