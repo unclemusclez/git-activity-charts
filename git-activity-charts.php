@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 define('GIT_ACTIVITY_CHARTS_VERSION', '0.1.0');
 define('GIT_ACTIVITY_CHARTS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GIT_ACTIVITY_CHARTS_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', __FILE__));
+define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', (__FILE__));
 
 // Include necessary files
 require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/class-git-activity-charts.php';
