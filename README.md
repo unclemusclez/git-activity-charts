@@ -103,39 +103,48 @@ IP Ranges for GitHub and GitLab
 To allow GitHub and GitLab to contact your site (e.g., for webhooks), you can whitelist their IP ranges in your Apache or Nginx configuration. Here are the IP ranges as of April 2025 (you should verify these with the official documentation, as they may change):
 GitHub:
 Meta API: https://api.github.com/meta provides the current IP ranges. As of now, common ranges include:
+
+```sh
 192.30.252.0/22
-
 185.199.108.0/22
-
 140.82.112.0/20
-
 143.55.64.0/20
+```
 
+```sh
 allow 192.30.252.0/22;
 allow 185.199.108.0/22;
 allow 140.82.112.0/20;
 allow 143.55.64.0/20;
 deny all;
+```
 
+```sh
 <Location "/xmlrpc.php">
-Order Deny,Allow
-Deny from all
-Allow from 192.30.252.0/22
-Allow from 185.199.108.0/22
-Allow from 140.82.112.0/20
-Allow from 143.55.64.0/20
+   Order Deny,Allow
+   Deny from all
+   Allow from 192.30.252.0/22
+   Allow from 185.199.108.0/22
+   Allow from 140.82.112.0/20
+   Allow from 143.55.64.0/20
 </Location>
+```
 
 GitLab:
 GitLab doesn’t publish a static list of IP ranges for webhooks, but they typically originate from their cloud infrastructure (e.g., AWS). You can monitor your server logs for GitLab webhook requests and whitelist those IPs, or contact GitLab support for their current ranges.
 
 Common AWS ranges used by GitLab (subject to change):
+
+```sh
 52.95.245.0/24
 
 52.95.246.0/24
+```
 
 Example Nginx configuration:
 
+```sh
 allow 52.95.245.0/24;
 allow 52.95.246.0/24;
 deny all;
+```

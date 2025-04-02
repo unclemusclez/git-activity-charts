@@ -11,14 +11,18 @@ Text Domain: git-activity-charts
 */
 
 
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GIT_ACTIVITY_CHARTS_VERSION', '0.0.0');
+define('GIT_ACTIVITY_CHARTS_VERSION', '0.1.0');
 define('GIT_ACTIVITY_CHARTS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GIT_ACTIVITY_CHARTS_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', (__FILE__));
+define('GIT_ACTIVITY_CHARTS_PLUGIN_FILE', __FILE__));
+
+// Debug: Log when the plugin file is loaded
+error_log("Git Activity Charts plugin file loaded: " . __FILE__);
 
 // Include necessary files
 require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/class-git-activity-charts.php';
@@ -29,6 +33,9 @@ function git_activity_charts_init() {
     static $instance = null;
     if (null === $instance) {
         $instance = new GitActivityCharts();
+        error_log("GitActivityCharts instantiated");
+    } else {
+        error_log("GitActivityCharts already instantiated - skipping");
     }
     return $instance;
 }
@@ -46,6 +53,7 @@ function git_activity_charts_activate() {
         update_option('git_activity_custom_css', '');
     }
 }
+
 function git_activity_charts_deactivate() {
     // Optional: Consider clearing all transients on deactivation
     // global $wpdb;
