@@ -2,7 +2,7 @@
 /*
 Plugin Name: Git Activity Charts
 Description: Display activity charts for GitHub, GitLab, Gitea, and Bitbucket repositories.
-Version: 1.3
+Version: 1.4
 Author: Your Name
 */
 
@@ -10,7 +10,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load provider classes
 require_once plugin_dir_path(__FILE__) . 'providers/class-provider-base.php';
 require_once plugin_dir_path(__FILE__) . 'providers/class-github-provider.php';
 require_once plugin_dir_path(__FILE__) . 'providers/class-gitlab-provider.php';
@@ -57,19 +56,22 @@ class GitActivityCharts {
         ]);
         register_setting('git_activity_options', 'git_activity_custom_css', [
             'sanitize_callback' => 'sanitize_textarea_field',
-            'default' => ''
+            'default' => "#git-charts .chart-container {\n    margin-bottom: 2em;\n    padding: 1em;\n    border: 1px solid #ddd;\n    border-radius: 5px;\n}\n#git-charts h3 {\n    display: flex;\n    align-items: center;\n    gap: 0.5em;\n    margin-bottom: 1em;\n}\n.provider-badge img {\n    width: 24px;\n    height: 24px;\n    vertical-align: middle;\n}\n.error {\n    color: #d32f2f;\n    font-style: italic;\n    margin-top: 0.5em;\n}"
         ]);
     }
 
     public function sanitize_accounts($input) {
         $sanitized = [];
         foreach ($input as $account) {
+            $type = sanitize_text_field($account['type']);
             $sanitized[] = [
-                'type' => sanitize_text_field($account['type']),
+                'type' => $type,
                 'username' => sanitize_text_field($account['username']),
                 'api_key' => sanitize_text_field($account['api_key']),
-                'repos' => array_map('sanitize_text_field', explode(',', $account['repos'])),
-                'instance_url' => isset($account['instance_url']) ? esc_url_raw($account['instance_url']) : ''
+                'repos' => array_filter(array_map('sanitize_text_field', explode(',', $account['repos']))), // Filter out empty repos
+                'instance_url' => isset($account['instance_url']) ? esc_url_raw($account['instance_url']) : '',
+                'use_color_logo' => isset($account['use_color_logo']) ? (bool)$account['use_color_logo'] : false,
+                'text_color' => isset($account['text_color']) ? sanitize_hex_color($account['text_color']) : $this->providers[$type]->get_color()
             ];
         }
         return $sanitized;
@@ -104,6 +106,8 @@ class GitActivityCharts {
                                         <button type="button" class="toggle-api-key">Show</button>
                                         <input type="text" name="git_activity_accounts[<?php echo $index; ?>][repos]" value="<?php echo esc_attr(implode(',', $account['repos'])); ?>" placeholder="Repos (comma-separated)" />
                                         <input type="url" name="git_activity_accounts[<?php echo $index; ?>][instance_url]" value="<?php echo esc_attr($account['instance_url']); ?>" placeholder="Instance URL (e.g., https://gitea.example.com)" />
+                                        <label><input type="checkbox" name="git_activity_accounts[<?php echo $index; ?>][use_color_logo]" value="1" <?php checked($account['use_color_logo'], 1); ?> /> Use Color Logo</label>
+                                        <input type="text" name="git_activity_accounts[<?php echo $index; ?>][text_color]" value="<?php echo esc_attr($account['text_color']); ?>" placeholder="Hex Color (e.g., #0366d6)" class="color-picker" />
                                         <button type="button" class="remove-account">Remove</button>
                                     </div>
                                 <?php endforeach; ?>
@@ -122,7 +126,7 @@ class GitActivityCharts {
                         <th>Custom CSS</th>
                         <td>
                             <textarea name="git_activity_custom_css" rows="10" cols="50"><?php echo esc_textarea($custom_css); ?></textarea>
-                            <p class="description">Customize the appearance of charts and badges (e.g., #git-charts .chart-container { margin: 20px; })</p>
+                            <p class="description">Customize the appearance of charts and badges</p>
                         </td>
                     </tr>
                 </table>
@@ -146,6 +150,8 @@ class GitActivityCharts {
                     <button type="button" class="toggle-api-key">Show</button>
                     <input type="text" name="git_activity_accounts[${index}][repos]" placeholder="Repos (comma-separated)" />
                     <input type="url" name="git_activity_accounts[${index}][instance_url]" placeholder="Instance URL (e.g., https://gitea.example.com)" />
+                    <label><input type="checkbox" name="git_activity_accounts[${index}][use_color_logo]" value="1" /> Use Color Logo</label>
+                    <input type="text" name="git_activity_accounts[${index}][text_color]" placeholder="Hex Color (e.g., #0366d6)" class="color-picker" />
                     <button type="button" class="remove-account">Remove</button>
                 `;
                 document.getElementById('accounts').appendChild(div);
@@ -182,7 +188,7 @@ class GitActivityCharts {
         }
 
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], null, true);
-        wp_enqueue_style('git-activity-charts-style', plugins_url('assets/style.css', __FILE__));
+        wp_enqueue_style('git-activity-charts-style', plugins_url('assets/style.css', __FILE__), [], '1.0', 'all');
         $custom_css = get_option('git_activity_custom_css', '');
         if ($custom_css) {
             wp_add_inline_style('git-activity-charts-style', $custom_css);
@@ -197,6 +203,8 @@ class GitActivityCharts {
             $username = $account['username'];
             $api_key = $account['api_key'];
             $instance_url = $account['instance_url'];
+            $use_color_logo = $account['use_color_logo'];
+            $text_color = $account['text_color'];
             $provider = $this->providers[$type] ?? null;
 
             if (!$provider) {
@@ -205,7 +213,8 @@ class GitActivityCharts {
             }
 
             foreach ($account['repos'] as $repo) {
-                $repo = trim($repo);
+                if (empty($repo)) continue; // Skip empty repo names
+
                 $cache_key = "git_activity_{$type}_{$username}_{$repo}";
                 $cached_data = get_transient($cache_key);
 
@@ -229,9 +238,11 @@ class GitActivityCharts {
                 }
 
                 $output .= "<div class='chart-container'>";
-                $logo_path = plugins_url("assets/{$type}/{$type}-logo-{$provider->get_color(true)}.svg", __FILE__);
-                $output .= "<h3>{$repo} ({$type} - {$username}) <span class='provider-badge'><img src='{$logo_path}' alt='{$type} logo' width='24' height='24'></span></h3>";
-                
+                $logo_variant = $use_color_logo && file_exists(plugin_dir_path(__FILE__) . "assets/{$type}/{$type}-mark-color.svg") ? 'color' : (file_exists(plugin_dir_path(__FILE__) . "assets/{$type}/{$type}-mark-dark.svg") ? 'dark' : 'white');
+                $logo_path = plugins_url("assets/{$type}/{$type}-mark-{$logo_variant}.svg", __FILE__);
+                $repo_url = $this->get_repo_url($type, $username, $repo, $instance_url);
+                $output .= "<h3 style='color: {$text_color};'>{$repo} ({$type} - {$username}) <a href='{$repo_url}' class='provider-badge'><img src='{$logo_path}' alt='{$type} mark' width='24' height='24'></a></h3>";
+
                 if (!empty($data['labels']) && !empty($data['commits'])) {
                     $canvas_id = "chart-{$type}-{$username}-{$repo}";
                     $output .= "<canvas id='{$canvas_id}'></canvas>";
@@ -269,7 +280,7 @@ class GitActivityCharts {
                 } else {
                     $output .= "<p>No activity data available for {$repo}.</p>";
                     if ($error = get_option("git_activity_error_{$cache_key}")) {
-                        $output .= current_user_can(' Wmanage_options') ? "<p class='error'>{$error}</p>" : '';
+                        $output .= current_user_can('manage_options') ? "<p class='error'>{$error}</p>" : '';
                         delete_option("git_activity_error_{$cache_key}");
                     }
                 }
@@ -279,6 +290,21 @@ class GitActivityCharts {
 
         $output .= '</div>';
         return $output;
+    }
+
+    private function get_repo_url($type, $username, $repo, $instance_url) {
+        switch ($type) {
+            case 'github':
+                return "https://github.com/{$username}/{$repo}";
+            case 'gitlab':
+                return ($instance_url ?: 'https://gitlab.com') . "/{$username}/{$repo}";
+            case 'gitea':
+                return $instance_url . "/{$username}/{$repo}";
+            case 'bitbucket':
+                return "https://bitbucket.org/{$username}/{$repo}";
+            default:
+                return '#';
+        }
     }
 }
 
