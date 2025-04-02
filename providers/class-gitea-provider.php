@@ -2,21 +2,13 @@
 class GiteaProvider extends ProviderBase {
     public function fetch_activity($username, $repo, $api_key, $instance_url = '') {
         if (!$instance_url) {
-            return false; // Gitea requires a custom instance URL
-        }
-        $url = "{$instance_url}/api/v1/repos/{$username}/{$repo}/commits?limit=100";
-        $response = wp_remote_get($url, [
-            'headers' => [
-                'Authorization' => "token {$api_key}"
-            ]
-        ]);
-
-        if (is_wp_error($response)) {
             return false;
         }
+        $url = "{$instance_url}/api/v1/repos/{$username}/{$repo}/commits?limit=100";
+        $headers = $api_key ? ['Authorization' => "token {$api_key}"] : [];
+        $commits = $this->fetch_paginated_commits($url, $headers);
 
-        $commits = json_decode(wp_remote_retrieve_body($response), true);
-        if (!$commits) {
+        if (empty($commits)) {
             return false;
         }
 
@@ -24,6 +16,6 @@ class GiteaProvider extends ProviderBase {
     }
 
     public function get_color() {
-        return '#00aabb'; // Gitea teal-ish
+        return '#00aabb';
     }
 }

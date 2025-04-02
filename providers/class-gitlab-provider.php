@@ -3,18 +3,10 @@ class GitLabProvider extends ProviderBase {
     public function fetch_activity($username, $repo, $api_key, $instance_url = '') {
         $base_url = $instance_url ?: 'https://gitlab.com';
         $url = "{$base_url}/api/v4/projects/" . urlencode("{$username}/{$repo}") . "/repository/commits?per_page=100";
-        $response = wp_remote_get($url, [
-            'headers' => [
-                'Private-Token' => $api_key
-            ]
-        ]);
+        $headers = $api_key ? ['Private-Token' => $api_key] : [];
+        $commits = $this->fetch_paginated_commits($url, $headers);
 
-        if (is_wp_error($response)) {
-            return false;
-        }
-
-        $commits = json_decode(wp_remote_retrieve_body($response), true);
-        if (!$commits) {
+        if (empty($commits)) {
             return false;
         }
 
@@ -22,6 +14,6 @@ class GitLabProvider extends ProviderBase {
     }
 
     public function get_color() {
-        return '#ff4500'; // GitLab orange
+        return '#ff4500';
     }
 }

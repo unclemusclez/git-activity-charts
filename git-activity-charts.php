@@ -2,7 +2,7 @@
 /*
 Plugin Name: Git Activity Charts
 Description: Display activity charts for GitHub, GitLab, Gitea, and Bitbucket repositories.
-Version: 1.1
+Version: 1.2
 Author: Your Name
 */
 
@@ -50,6 +50,10 @@ class GitActivityCharts {
         register_setting('git_activity_options', 'git_activity_accounts', [
             'sanitize_callback' => [$this, 'sanitize_accounts']
         ]);
+        register_setting('git_activity_options', 'git_activity_show_public_only', [
+            'type' => 'boolean',
+            'default' => false
+        ]);
     }
 
     public function sanitize_accounts($input) {
@@ -74,6 +78,7 @@ class GitActivityCharts {
                 <?php
                 settings_fields('git_activity_options');
                 $accounts = get_option('git_activity_accounts', []);
+                $show_public_only = get_option('git_activity_show_public_only', false);
                 ?>
                 <table class="form-table">
                     <tr>
@@ -97,6 +102,13 @@ class GitActivityCharts {
                                 <?php endforeach; ?>
                             </div>
                             <button type="button" id="add-account">Add Account</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Show Public Repos Only</th>
+                        <td>
+                            <input type="checkbox" name="git_activity_show_public_only" value="1" <?php checked($show_public_only, 1); ?> />
+                            <label>Limit display to public repositories (ignores private repos even with API keys)</label>
                         </td>
                     </tr>
                 </table>
@@ -123,15 +135,23 @@ class GitActivityCharts {
                 `;
                 document.getElementById('accounts').appendChild(div);
             });
-            document.addEventListener('click', function...
+            document.addEventListener('click', function(e) {
+                if (e.target.className === 'remove-account') {
+                    e.target.parentElement.remove();
+                }
+            });
+        </script>
+        <?php
+    }
 
     public function render_charts() {
         if (!is_user_logged_in() || !current_user_can('manage_options')) {
-            return 'Please log in to view activity charts.';
+            return '<p>Please log in to view activity charts.</p>';
         }
 
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], null, true);
         $accounts = get_option('git_activity_accounts', []);
+        $show_public_only = get_option('git_activity_show_public_only', false);
         $output = '<div id="git-charts">';
 
         foreach ($accounts as $account) {
@@ -142,13 +162,30 @@ class GitActivityCharts {
             $provider = $this->providers[$type] ?? null;
 
             if (!$provider) {
+                $output .= "<p>Invalid provider type: {$type}</p>";
                 continue;
             }
 
             foreach ($account['repos'] as $repo) {
                 $repo = trim($repo);
-                $data = $provider->fetch_activity($username, $repo, $api_key, $instance_url);
+                $cache_key = "git_activity_{$type}_{$username}_{$repo}";
+                $cached_data = get_transient($cache_key);
+
+                if ($cached_data === false) {
+                    $data = $provider->fetch_activity($username, $repo, $api_key, $instance_url);
+                    if ($data && !empty($data['labels']) && !empty($data['commits'])) {
+                        set_transient($cache_key, $data, HOUR_IN_SECONDS); // Cache for 1 hour
+                    }
+                } else {
+                    $data = $cached_data;
+                }
+
                 if ($data && !empty($data['labels']) && !empty($data['commits'])) {
+                    // Skip private repos if show_public_only is true and no API key is provided
+                    if ($show_public_only && empty($api_key)) {
+                        continue;
+                    }
+
                     $canvas_id = "chart-{$type}-{$username}-{$repo}";
                     $output .= "<h3>{$repo} ({$type} - {$username})</h3>";
                     $output .= "<canvas id='{$canvas_id}'></canvas>";
@@ -162,10 +199,16 @@ class GitActivityCharts {
                                         label: 'Commits',
                                         data: " . json_encode($data['commits']) . ",
                                         borderColor: '" . $provider->get_color() . "',
-                                        fill: false
+                                        fill: false,
+                                        tension: 0.1
                                     }]
                                 },
                                 options: {
+                                    responsive: true,
+                                    scales: {
+                                        x: { title: { display: true, text: 'Date' } },
+                                        y: { title: { display: true, text: 'Commits' } }
+                                    },
                                     plugins: {
                                         tooltip: {
                                             callbacks: {
@@ -178,7 +221,7 @@ class GitActivityCharts {
                         });
                     </script>";
                 } else {
-                    $output .= "<p>No activity data available for {$repo} ({$type} - {$username}).</p>";
+                    $output .= "<p>No activity data available for {$repo} ({$type} - {$username}). Check API key or repository access.</p>";
                 }
             }
         }

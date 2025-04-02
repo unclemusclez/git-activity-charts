@@ -2,14 +2,13 @@
 class GitHubProvider extends ProviderBase {
     public function fetch_activity($username, $repo, $api_key, $instance_url = '') {
         $url = "https://api.github.com/repos/{$username}/{$repo}/stats/commit_activity";
-        $response = wp_remote_get($url, [
-            'headers' => [
-                'Authorization' => "token {$api_key}",
-                'Accept' => 'application/vnd.github.v3+json'
-            ]
-        ]);
+        $headers = ['Accept' => 'application/vnd.github.v3+json'];
+        if ($api_key) {
+            $headers['Authorization'] = "token {$api_key}";
+        }
+        $response = wp_remote_get($url, ['headers' => $headers]);
 
-        if (is_wp_error($response)) {
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
             return false;
         }
 
@@ -29,6 +28,6 @@ class GitHubProvider extends ProviderBase {
     }
 
     public function get_color() {
-        return '#0366d6'; // GitHub blue
+        return '#0366d6';
     }
 }

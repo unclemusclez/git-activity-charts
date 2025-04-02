@@ -1,15 +1,11 @@
 <?php
 class BitbucketProvider extends ProviderBase {
     public function fetch_activity($username, $repo, $api_key, $instance_url = '') {
-        // Bitbucket uses workspace/repo-slug; assuming username is workspace
         $url = "https://api.bitbucket.org/2.0/repositories/{$username}/{$repo}/commits?pagelen=100";
-        $response = wp_remote_get($url, [
-            'headers' => [
-                'Authorization' => "Bearer {$api_key}"
-            ]
-        ]);
+        $headers = $api_key ? ['Authorization' => "Bearer {$api_key}"] : [];
+        $response = wp_remote_get($url, ['headers' => $headers]);
 
-        if (is_wp_error($response)) {
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
             return false;
         }
 
@@ -18,10 +14,20 @@ class BitbucketProvider extends ProviderBase {
             return false;
         }
 
-        return $this->aggregate_commits($data['values']);
+        $commits = $data['values'];
+        while (isset($data['next'])) {
+            $response = wp_remote_get($data['next'], ['headers' => $headers]);
+            if (is_wp_error($response)) {
+                break;
+            }
+            $data = json_decode(wp_remote_retrieve_body($response), true);
+            $commits = array_merge($commits, $data['values'] ?? []);
+        }
+
+        return $this->aggregate_commits($commits, 'date');
     }
 
     public function get_color() {
-        return '#205081'; // Bitbucket blue
+        return '#205081';
     }
 }
