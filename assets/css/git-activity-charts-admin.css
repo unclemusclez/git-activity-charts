@@ -1,0 +1,17 @@
+/* Optional: Add specific styles only for the admin page */
+.git-activity-settings .button-link-delete {
+    color: #dc3232 !important; /* Make remove button red */
+    text-decoration: none;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+.git-activity-settings .button-link-delete:hover {
+    color: #a00 !important;
+    text-decoration: underline;
+}
+
+/* Adjust spacing or alignment if needed */
+.git-activity-settings .form-table {
+    margin-top: 0; /* Reduce space above table within group */
+}
