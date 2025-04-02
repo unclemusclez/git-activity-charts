@@ -2,8 +2,8 @@
 /*
 Plugin Name: Git Activity Charts
 Description: Display activity charts for GitHub, GitLab, Gitea, and Bitbucket repositories.
-Version: 1.2
-Author: Your Name
+Version: 0.0.0
+Author: Devin J. Dawson
 */
 
 if (!defined('ABSPATH')) {
