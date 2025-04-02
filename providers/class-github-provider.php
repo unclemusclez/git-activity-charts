@@ -27,7 +27,7 @@ class GitHubProvider extends ProviderBase {
         return ['labels' => $labels, 'commits' => $commits];
     }
 
-    public function get_color() {
-        return '#0366d6';
+    public function get_color($hex = false) {
+        return $hex ? '0366d6' : '#0366d6';
     }
 }

@@ -2,8 +2,8 @@
 /*
 Plugin Name: Git Activity Charts
 Description: Display activity charts for GitHub, GitLab, Gitea, and Bitbucket repositories.
-Version: 0.0.0
-Author: Devin J. Dawson
+Version: 1.3
+Author: Your Name
 */
 
 if (!defined('ABSPATH')) {
@@ -23,6 +23,7 @@ class GitActivityCharts {
     public function __construct() {
         add_action('admin_menu', [$this, 'add_admin_menu']);
         add_action('admin_init', [$this, 'register_settings']);
+        add_action('admin_notices', [$this, 'show_admin_notices']);
         add_shortcode('git_activity_charts', [$this, 'render_charts']);
         $this->init_providers();
     }
@@ -54,6 +55,10 @@ class GitActivityCharts {
             'type' => 'boolean',
             'default' => false
         ]);
+        register_setting('git_activity_options', 'git_activity_custom_css', [
+            'sanitize_callback' => 'sanitize_textarea_field',
+            'default' => ''
+        ]);
     }
 
     public function sanitize_accounts($input) {
@@ -79,6 +84,7 @@ class GitActivityCharts {
                 settings_fields('git_activity_options');
                 $accounts = get_option('git_activity_accounts', []);
                 $show_public_only = get_option('git_activity_show_public_only', false);
+                $custom_css = get_option('git_activity_custom_css', '');
                 ?>
                 <table class="form-table">
                     <tr>
@@ -94,7 +100,8 @@ class GitActivityCharts {
                                             <option value="bitbucket" <?php selected($account['type'], 'bitbucket'); ?>>Bitbucket</option>
                                         </select>
                                         <input type="text" name="git_activity_accounts[<?php echo $index; ?>][username]" value="<?php echo esc_attr($account['username']); ?>" placeholder="Username" />
-                                        <input type="text" name="git_activity_accounts[<?php echo $index; ?>][api_key]" value="<?php echo esc_attr($account['api_key']); ?>" placeholder="API Key" />
+                                        <input type="password" name="git_activity_accounts[<?php echo $index; ?>][api_key]" value="<?php echo esc_attr($account['api_key']); ?>" placeholder="API Key" class="api-key-input" />
+                                        <button type="button" class="toggle-api-key">Show</button>
                                         <input type="text" name="git_activity_accounts[<?php echo $index; ?>][repos]" value="<?php echo esc_attr(implode(',', $account['repos'])); ?>" placeholder="Repos (comma-separated)" />
                                         <input type="url" name="git_activity_accounts[<?php echo $index; ?>][instance_url]" value="<?php echo esc_attr($account['instance_url']); ?>" placeholder="Instance URL (e.g., https://gitea.example.com)" />
                                         <button type="button" class="remove-account">Remove</button>
@@ -108,7 +115,14 @@ class GitActivityCharts {
                         <th>Show Public Repos Only</th>
                         <td>
                             <input type="checkbox" name="git_activity_show_public_only" value="1" <?php checked($show_public_only, 1); ?> />
-                            <label>Limit display to public repositories (ignores private repos even with API keys)</label>
+                            <label>Limit display to public repositories</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Custom CSS</th>
+                        <td>
+                            <textarea name="git_activity_custom_css" rows="10" cols="50"><?php echo esc_textarea($custom_css); ?></textarea>
+                            <p class="description">Customize the appearance of charts and badges (e.g., #git-charts .chart-container { margin: 20px; })</p>
                         </td>
                     </tr>
                 </table>
@@ -128,20 +142,38 @@ class GitActivityCharts {
                         <option value="bitbucket">Bitbucket</option>
                     </select>
                     <input type="text" name="git_activity_accounts[${index}][username]" placeholder="Username" />
-                    <input type="text" name="git_activity_accounts[${index}][api_key]" placeholder="API Key" />
+                    <input type="password" name="git_activity_accounts[${index}][api_key]" placeholder="API Key" class="api-key-input" />
+                    <button type="button" class="toggle-api-key">Show</button>
                     <input type="text" name="git_activity_accounts[${index}][repos]" placeholder="Repos (comma-separated)" />
                     <input type="url" name="git_activity_accounts[${index}][instance_url]" placeholder="Instance URL (e.g., https://gitea.example.com)" />
                     <button type="button" class="remove-account">Remove</button>
                 `;
                 document.getElementById('accounts').appendChild(div);
             });
+
             document.addEventListener('click', function(e) {
                 if (e.target.className === 'remove-account') {
                     e.target.parentElement.remove();
+                } else if (e.target.className === 'toggle-api-key') {
+                    const input = e.target.previousElementSibling;
+                    input.type = input.type === 'password' ? 'text' : 'password';
+                    e.target.textContent = input.type === 'password' ? 'Show' : 'Hide';
                 }
             });
         </script>
         <?php
+    }
+
+    public function show_admin_notices() {
+        $accounts = get_option('git_activity_accounts', []);
+        foreach ($accounts as $account) {
+            foreach ($account['repos'] as $repo) {
+                $cache_key = "git_activity_{$account['type']}_{$account['username']}_{$repo}";
+                if ($error = get_option("git_activity_error_{$cache_key}")) {
+                    echo "<div class='notice notice-error is-dismissible'><p>{$error}</p></div>";
+                }
+            }
+        }
     }
 
     public function render_charts() {
@@ -150,6 +182,12 @@ class GitActivityCharts {
         }
 
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], null, true);
+        wp_enqueue_style('git-activity-charts-style', plugins_url('assets/style.css', __FILE__));
+        $custom_css = get_option('git_activity_custom_css', '');
+        if ($custom_css) {
+            wp_add_inline_style('git-activity-charts-style', $custom_css);
+        }
+
         $accounts = get_option('git_activity_accounts', []);
         $show_public_only = get_option('git_activity_show_public_only', false);
         $output = '<div id="git-charts">';
@@ -174,20 +212,28 @@ class GitActivityCharts {
                 if ($cached_data === false) {
                     $data = $provider->fetch_activity($username, $repo, $api_key, $instance_url);
                     if ($data && !empty($data['labels']) && !empty($data['commits'])) {
-                        set_transient($cache_key, $data, HOUR_IN_SECONDS); // Cache for 1 hour
+                        set_transient($cache_key, $data, HOUR_IN_SECONDS);
+                    } else {
+                        if (current_user_can('manage_options')) {
+                            $error_msg = "Failed to fetch data for {$repo} ({$type} - {$username}). Check API key or repository access.";
+                            update_option("git_activity_error_{$cache_key}", $error_msg);
+                        }
+                        $data = ['labels' => [], 'commits' => []];
                     }
                 } else {
                     $data = $cached_data;
                 }
 
-                if ($data && !empty($data['labels']) && !empty($data['commits'])) {
-                    // Skip private repos if show_public_only is true and no API key is provided
-                    if ($show_public_only && empty($api_key)) {
-                        continue;
-                    }
+                if ($show_public_only && empty($api_key)) {
+                    continue;
+                }
 
+                $output .= "<div class='chart-container'>";
+                $logo_path = plugins_url("assets/{$type}/{$type}-logo-{$provider->get_color(true)}.svg", __FILE__);
+                $output .= "<h3>{$repo} ({$type} - {$username}) <span class='provider-badge'><img src='{$logo_path}' alt='{$type} logo' width='24' height='24'></span></h3>";
+                
+                if (!empty($data['labels']) && !empty($data['commits'])) {
                     $canvas_id = "chart-{$type}-{$username}-{$repo}";
-                    $output .= "<h3>{$repo} ({$type} - {$username})</h3>";
                     $output .= "<canvas id='{$canvas_id}'></canvas>";
                     $output .= "<script>
                         document.addEventListener('DOMContentLoaded', function() {
@@ -221,8 +267,13 @@ class GitActivityCharts {
                         });
                     </script>";
                 } else {
-                    $output .= "<p>No activity data available for {$repo} ({$type} - {$username}). Check API key or repository access.</p>";
+                    $output .= "<p>No activity data available for {$repo}.</p>";
+                    if ($error = get_option("git_activity_error_{$cache_key}")) {
+                        $output .= current_user_can(' Wmanage_options') ? "<p class='error'>{$error}</p>" : '';
+                        delete_option("git_activity_error_{$cache_key}");
+                    }
                 }
+                $output .= "</div>";
             }
         }
 
