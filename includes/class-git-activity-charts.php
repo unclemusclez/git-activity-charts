@@ -10,7 +10,7 @@ class GitActivityCharts {
         $this->load_providers();
         add_action('admin_menu', [$this, 'add_admin_menu']);
         add_action('admin_init', [$this, 'register_settings']);
-        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
+        // add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_scripts']);
         add_action('admin_notices', [$this, 'show_admin_notices']);
         add_shortcode('git_activity_charts', [$this, 'render_charts_shortcode']);
