@@ -18,52 +18,52 @@ class GitActivityCharts {
 
     private function load_providers() {
         $this->providers = [
-        'github' => [
-            'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
-                $query = 'query($userName: String!) {
-                    user(login: $userName) {
-                        contributionsCollection {
-                            contributionCalendar {
-                                totalContributions
-                                weeks {
-                                    contributionDays {
-                                        contributionCount
-                                        date
+            'github' => [
+                'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
+                    $query = 'query($userName: String!) {
+                        user(login: $userName) {
+                            contributionsCollection {
+                                contributionCalendar {
+                                    totalContributions
+                                    weeks {
+                                        contributionDays {
+                                            contributionCount
+                                            date
+                                        }
                                     }
                                 }
                             }
                         }
+                    }';
+                    $variables = ['userName' => $username];
+                    $headers = [
+                        'Authorization' => "Bearer {$api_key}",
+                        'Content-Type' => 'application/json'
+                    ];
+                    $response = wp_remote_post('https://api.github.com/graphql', [
+                        'headers' => $headers,
+                        'body' => json_encode(['query' => $query, 'variables' => $variables])
+                    ]);
+                    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+                        return ['data' => false];
                     }
-                }';
-                $variables = ['userName' => $username];
-                $headers = [
-                    'Authorization' => "Bearer {$api_key}",
-                    'Content-Type' => 'application/json'
-                ];
-                $response = wp_remote_post('https://api.github.com/graphql', [
-                    'headers' => $headers,
-                    'body' => json_encode(['query' => $query, 'variables' => $variables])
-                ]);
-                if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-                    return ['data' => false];
-                }
-                $body = json_decode(wp_remote_retrieve_body($response), true);
-                $contributions = $body['data']['user']['contributionsCollection']['contributionCalendar']['weeks'] ?? [];
-                $commits = [];
-                foreach ($contributions as $week) {
-                    foreach ($week['contributionDays'] as $day) {
-                        if ($day['contributionCount'] > 0) {
-                            $commits[] = [
-                                'message' => "Contributed {$day['contributionCount']} times",
-                                'committed_date' => $day['date'],
-                                'repo' => 'GitHub Activity',
-                                'repo_url' => "https://github.com/{$username}"
-                            ];
+                    $body = json_decode(wp_remote_retrieve_body($response), true);
+                    $contributions = $body['data']['user']['contributionsCollection']['contributionCalendar']['weeks'] ?? [];
+                    $commits = [];
+                    foreach ($contributions as $week) {
+                        foreach ($week['contributionDays'] as $day) {
+                            if ($day['contributionCount'] > 0) {
+                                $commits[] = [
+                                    'message' => "Contributed {$day['contributionCount']} times",
+                                    'committed_date' => $day['date'],
+                                    'repo' => 'GitHub Activity',
+                                    'repo_url' => "https://github.com/{$username}"
+                                ];
+                            }
                         }
                     }
-                }
-                return ['data' => $commits];
-            },
+                    return ['data' => $commits];
+                },
             'gitlab' => [
                 'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
                     $base_url = $instance_url ?: 'https://gitlab.com';
