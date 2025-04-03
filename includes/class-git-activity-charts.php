@@ -426,7 +426,7 @@ class GitActivityCharts {
                         }
                     },
                     subDomain: { 
-                        type: 'day', 
+                        type: 'ghDay', 
                         width: 10, 
                         height: 10, 
                         radius: 0, 
