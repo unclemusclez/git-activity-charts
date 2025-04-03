@@ -33,18 +33,18 @@ error_log("Git Activity Charts plugin file loaded: " . __FILE__);
 require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/class-git-activity-charts.php';
 require_once GIT_ACTIVITY_CHARTS_PLUGIN_DIR . 'includes/admin-settings-page.php';
 
-// Initialize the plugin
-function git_activity_charts_init() {
-    static $instance = null;
-    if (null === $instance) {
-        $instance = new GitActivityCharts();
-        error_log("GitActivityCharts instantiated");
-    } else {
-        error_log("GitActivityCharts already instantiated - skipping");
-    }
-    return $instance;
-}
-add_action('plugins_loaded', 'git_activity_charts_init');
+// // Initialize the plugin
+// function git_activity_charts_init() {
+//     static $instance = null;
+//     if (null === $instance) {
+//         $instance = new GitActivityCharts();
+//         error_log("GitActivityCharts instantiated");
+//     } else {
+//         error_log("GitActivityCharts already instantiated - skipping");
+//     }
+//     return $instance;
+// }
+// add_action('plugins_loaded', 'git_activity_charts_init');
 
 // Activation/Deactivation Hooks
 register_activation_hook(__FILE__, 'git_activity_charts_activate');
