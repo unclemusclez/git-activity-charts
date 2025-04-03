@@ -415,7 +415,7 @@ class GitActivityCharts {
                     date: { 
                         start: new Date(),
                     },
-                    verticalOrientation: 1;
+                    verticalOrientation: 1,
                     range: 53,
                     domain: { type: 'week', sort:  'desc'},
                     subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 0 },
