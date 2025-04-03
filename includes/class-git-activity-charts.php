@@ -72,7 +72,7 @@ class GitActivityCharts {
                     error_log("GitLab Fetch Start - Username: {$username}, Instance: {$base_url}, Repos: " . implode(',', $repos));
                     
                     foreach ($repos as $repo) {
-                        $project_url = "{$base_url}/api/v4/projects/" . urlencode("{$username}/{$repo}");
+                        $project_url = "{$base_url}/api/v4/projects/" . urlencode("{$repo}");
                         $headers = $api_key ? ['Private-Token' => $api_key] : [];
                         $repo_response = wp_remote_get($project_url, ['headers' => $headers]);
                         
