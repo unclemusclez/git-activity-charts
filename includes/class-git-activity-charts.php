@@ -413,7 +413,7 @@ class GitActivityCharts {
                     animationDuration: 0,
                     // date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
                     date: { 
-                        start: new Date();
+                        start: new Date(),
                     },
                     range: 53,
                     domain: { type: 'week', sort:  'desc'},
