@@ -364,70 +364,24 @@ class GitActivityCharts {
                 $output .= '<p class="no-data">No activity data available for the past year.</p>';
             } else {
                 $output .= '<div id="heatmap-legend" class="cal-heatmap-legend"></div>';
+                // In render_charts_shortcode(), after heatmap initialization
                 $output .= "<script type='text/javascript'>
-                    console.log('Script loaded at: ' + new Date().toISOString());
-                    
-                    window.addEventListener('load', function() {
-                        console.log('Window loaded at: ' + new Date().toISOString());
-                        if (typeof d3 === 'undefined') {
-                            console.error('D3.js not loaded.');
-                            document.getElementById('heatmap').innerHTML = '<p>Error: D3.js not loaded.</p>';
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (typeof d3 === 'undefined' || typeof CalHeatmap === 'undefined') {
+                            console.error('Required libraries not loaded.');
+                            document.getElementById('heatmap').innerHTML = '<p>Chart library failed to load.</p>';
                             return;
                         }
-                        if (typeof CalHeatmap === 'undefined') {
-                            console.error('CalHeatmap not loaded.');
-                            document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap not loaded.</p>';
-                            return;
-                        }
-            
-                        var startDate = new Date();
-                        startDate.setFullYear(startDate.getFullYear() - 1);
-                        startDate.setDate(startDate.getDate() + 1);
-                        var endDate = new Date();
-                        console.log('Heatmap start date: ' + startDate.toISOString());
-                        console.log('Heatmap end date: ' + endDate.toISOString());
-                        console.log('Heatmap data:', " . json_encode($heatmap_json) . ");
-                        console.log('Max contribution value: " . $max_value . "');
-                        console.log('Raw commits:', " . json_encode($all_commits) . ");
-            
-                        try {
-                            var cal = new CalHeatmap();
-                            cal.paint({
-                                data: " . json_encode($heatmap_json) . ",
-                                date: { start: startDate, weekStartOn: 0 },
-                                range: 13,
-                                domain: { type: 'month', gutter: 1, label: { text: 'MMM', position: 'top' } },
-                                subDomain: { type: 'ghDay', width: 10, height: 10, radius: 1, gutter: 1 },
-                                scale: { 
-                                    color: { 
-                                        range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
-                                        type: 'linear',
-                                        domain: [0, " . $max_value . "]
-                                    } 
-                                },
-                                itemSelector: '#heatmap',
-                                tooltip: { 
-                                    enabled: true, 
-                                    text: function(date, value) { 
-                                        return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
-                                    } 
-                                }
-                            });
-            
-                            var legend = document.getElementById('heatmap-legend');
-                            legend.innerHTML = '<span>Less</span>' +
-                                '<div class=\"legend-square\" style=\"background-color: #ebedf0;\"></div>' +
-                                '<div class=\"legend-square\" style=\"background-color: #9be9a8;\"></div>' +
-                                '<div class=\"legend-square\" style=\"background-color: #40c463;\"></div>' +
-                                '<div class=\"legend-square\" style=\"background-color: #30a14e;\"></div>' +
-                                '<div class=\"legend-square\" style=\"background-color: #216e39;\"></div>' +
-                                '<span>More</span>';
-            
-                            console.log('Heatmap initialized successfully.');
-                        } catch (e) {
-                            console.error('Heatmap initialization failed:', e);
-                            document.getElementById('heatmap').innerHTML = '<p>Error rendering heatmap: ' + e.message + '</p>';
-                        }
+                        var cal = new CalHeatmap();
+                        cal.paint({
+                            data: " . json_encode($heatmap_json) . ",
+                            date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
+                            range: 13,
+                            domain: { type: 'month', label: { text: 'MMM', position: 'top' } },
+                            subDomain: { type: 'ghDay', width: 10, height: 10 },
+                            scale: { color: { range: ['#ebedf0', '#216e39'], domain: [0, " . $max_value . "] } },
+                            itemSelector: '#heatmap'
+                        });
                     });
                 </script>";
             }
