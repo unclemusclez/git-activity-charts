@@ -411,7 +411,8 @@ class GitActivityCharts {
                 cal.paint({
                     data: " . json_encode($heatmap_json) . ",
                     animationDuration: 0,
-                    date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
+                    // date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
+                    date: new Date();
                     range: 53,
                     domain: { type: 'week', sort:  'desc', label: 'MMM' },
                     subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 0 },
