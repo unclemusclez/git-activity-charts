@@ -421,11 +421,17 @@ class GitActivityCharts {
                         type: 'week', 
                         sort:  'desc', 
                         label: { 
-                            string: 'MMM', 
+                            string: 'ddd', 
                             position: 'right' 
                         }
                     },
-                    subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 0 },
+                    subDomain: { 
+                        type: 'day', 
+                        width: 10, 
+                        height: 10, 
+                        radius: 0, 
+                        gutter: 1 
+                    },
                     scale: { 
                         color: { 
                             range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
