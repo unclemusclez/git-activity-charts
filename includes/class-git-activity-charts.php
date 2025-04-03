@@ -270,8 +270,10 @@ class GitActivityCharts {
             return '<p>Please log in to view activity charts.</p>';
         }
 
-        // Enqueue Cal-Heatmap only (no custom script for now)
-        wp_enqueue_script('cal-heatmap', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.min.js', [], '4.2.1', true);
+        // Enqueue D3.js (required by Cal-Heatmap)
+        wp_enqueue_script('d3', 'https://cdn.jsdelivr.net/npm/d3@7', [], '7.8.5', true);
+        // Enqueue Cal-Heatmap with D3 as a dependency
+        wp_enqueue_script('cal-heatmap', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.min.js', ['d3'], '4.2.1', true);
         wp_enqueue_style('cal-heatmap-css', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.css', [], '4.2.1');
 
         // Data fetching (unchanged)
@@ -298,7 +300,7 @@ class GitActivityCharts {
             } else {
                 if (current_user_can('manage_options')) {
                     $error_msg = "Failed to fetch data for {$username} ({$type}). Check API key or repository access.";
-                    update_option("git_activity_error_{$type}_{$username}", $error_msg);
+                    update_option("git_activity_error_{$type}_{$username}", $  $error_msg);
                 }
                 continue;
             }
@@ -346,18 +348,21 @@ class GitActivityCharts {
             $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>';
             $output .= "<script type='text/javascript'>
                 (function() {
-                    // Immediate debug to check if script runs
                     console.log('Heatmap script running at: ' + new Date().toISOString());
                     
-                    // Wait for DOM and CalHeatmap
                     document.addEventListener('DOMContentLoaded', function() {
+                        if (typeof d3 === 'undefined') {
+                            console.error('D3.js library not loaded.');
+                            document.getElementById('heatmap').innerHTML = '<p>Error: D3.js library failed to load.</p>';
+                            return;
+                        }
                         if (typeof CalHeatmap === 'undefined') {
                             console.error('CalHeatmap library not loaded.');
-                            document.getElementById('heatmap').innerHTML = '<p>Error: Heatmap library failed to load. Check console.</p>';
+                            document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap library failed to load.</p>';
                             return;
                         }
 
-                        console.log('CalHeatmap loaded, initializing with data:', " . json_encode($heatmap_json) . ");
+                        console.log('Libraries loaded, initializing heatmap with data:', " . json_encode($heatmap_json) . ");
                         try {
                             var cal = new CalHeatmap();
                             cal.paint({
