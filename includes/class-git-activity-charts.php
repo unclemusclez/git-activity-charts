@@ -270,10 +270,11 @@ class GitActivityCharts {
             return '<p>Please log in to view activity charts.</p>';
         }
 
-        // Enqueue local D3.js and Cal-Heatmap
-        wp_enqueue_script('d3', plugins_url('assets/js/d3.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE), [], '7.8.5', true);
-        wp_enqueue_script('cal-heatmap', plugins_url('assets/js/cal-heatmap.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE), ['d3'], '4.2.1', true);
-        wp_enqueue_style('cal-heatmap-css', plugins_url('assets/css/cal-heatmap.css', GIT_ACTIVITY_CHARTS_PLUGIN_FILE), [], '4.2.1');
+        // Enqueue local D3.js and Cal-Heatmap with cache-busting
+        $cache_buster = time(); // Unique timestamp to force fresh load
+        wp_enqueue_script('d3', plugins_url('assets/js/d3.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '7.8.5', true);
+        wp_enqueue_script('cal-heatmap', plugins_url('assets/js/cal-heatmap.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", ['d3'], '4.2.1', true);
+        wp_enqueue_style('cal-heatmap-css', plugins_url('assets/css/cal-heatmap.css', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '4.2.1');
 
         // Data fetching (unchanged)
         $accounts = get_option('git_activity_accounts', []);
@@ -394,16 +395,24 @@ class GitActivityCharts {
                     }
                 }
 
-                // Try immediately after load, with a fallback delay
+                // Run after load with retries
                 window.addEventListener('load', function() {
                     console.log('Window loaded at: ' + new Date().toISOString());
                     initializeHeatmap();
                     
-                    // Fallback: retry after 1 second if CalHeatmap isn't ready
-                    setTimeout(function() {
-                        if (typeof CalHeatmap === 'undefined') {
-                            console.warn('CalHeatmap still not defined, retrying...');
+                    // Retry up to 3 times, 1 second apart
+                    var attempts = 0;
+                    var maxAttempts = 3;
+                    var retryInterval = setInterval(function() {
+                        if (typeof CalHeatmap === 'undefined' && attempts < maxAttempts) {
+                            console.warn('CalHeatmap not defined, retrying (' + (attempts + 1) + '/' + maxAttempts + ')...');
                             initializeHeatmap();
+                            attempts++;
+                        } else {
+                            clearInterval(retryInterval);
+                            if (typeof CalHeatmap === 'undefined') {
+                                console.error('CalHeatmap never loaded after retries.');
+                            }
                         }
                     }, 1000);
                 });
