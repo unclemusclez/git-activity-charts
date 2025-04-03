@@ -416,7 +416,7 @@ class GitActivityCharts {
                         start: new Date();
                     },
                     range: 53,
-                    domain: { type: 'week', sort:  'desc', label: 'MMM' },
+                    domain: { type: 'week', sort:  'desc'},
                     subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 0 },
                     scale: { 
                         color: { 
