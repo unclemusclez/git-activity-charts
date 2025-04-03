@@ -270,11 +270,10 @@ class GitActivityCharts {
             return '<p>Please log in to view activity charts.</p>';
         }
 
-        // Enqueue D3.js (required by Cal-Heatmap)
-        wp_enqueue_script('d3', 'https://cdn.jsdelivr.net/npm/d3@7', [], '7.8.5', true);
-        // Enqueue Cal-Heatmap with D3 as a dependency
-        wp_enqueue_script('cal-heatmap', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.min.js', ['d3'], '4.2.1', true);
-        wp_enqueue_style('cal-heatmap-css', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.css', [], '4.2.1');
+        // Enqueue local D3.js and Cal-Heatmap
+        wp_enqueue_script('d3', plugins_url('assets/js/d3.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE), [], '7.8.5', true);
+        wp_enqueue_script('cal-heatmap', plugins_url('assets/js/cal-heatmap.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE), ['d3'], '4.2.1', true);
+        wp_enqueue_style('cal-heatmap-css', plugins_url('assets/css/cal-heatmap.css', GIT_ACTIVITY_CHARTS_PLUGIN_FILE), [], '4.2.1');
 
         // Data fetching (unchanged)
         $accounts = get_option('git_activity_accounts', []);
@@ -300,7 +299,7 @@ class GitActivityCharts {
             } else {
                 if (current_user_can('manage_options')) {
                     $error_msg = "Failed to fetch data for {$username} ({$type}). Check API key or repository access.";
-                    update_option("git_activity_error_{$type}_{$username}", $  $error_msg);
+                    update_option("git_activity_error_{$type}_{$username}", $error_msg);
                 }
                 continue;
             }
@@ -347,54 +346,52 @@ class GitActivityCharts {
         } else {
             $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>';
             $output .= "<script type='text/javascript'>
-                (function() {
-                    console.log('Heatmap script running at: ' + new Date().toISOString());
+                window.addEventListener('load', function() {
+                    console.log('Window loaded at: ' + new Date().toISOString());
                     
-                    document.addEventListener('DOMContentLoaded', function() {
-                        if (typeof d3 === 'undefined') {
-                            console.error('D3.js library not loaded.');
-                            document.getElementById('heatmap').innerHTML = '<p>Error: D3.js library failed to load.</p>';
-                            return;
-                        }
-                        if (typeof CalHeatmap === 'undefined') {
-                            console.error('CalHeatmap library not loaded.');
-                            document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap library failed to load.</p>';
-                            return;
-                        }
+                    if (typeof d3 === 'undefined') {
+                        console.error('D3.js not loaded.');
+                        document.getElementById('heatmap').innerHTML = '<p>Error: D3.js not loaded.</p>';
+                        return;
+                    }
+                    if (typeof CalHeatmap === 'undefined') {
+                        console.error('CalHeatmap not loaded.');
+                        document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap not loaded.</p>';
+                        return;
+                    }
 
-                        console.log('Libraries loaded, initializing heatmap with data:', " . json_encode($heatmap_json) . ");
-                        try {
-                            var cal = new CalHeatmap();
-                            cal.paint({
-                                data: " . json_encode($heatmap_json) . ",
-                                date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
-                                range: 12,
-                                domain: { type: 'month', padding: [0, 10, 0, 10], label: { text: 'MMM', position: 'top' } },
-                                subDomain: { type: 'day', width: 12, height: 12, radius: 2 },
-                                scale: { 
-                                    color: { 
-                                        range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
-                                        type: 'linear',
-                                        domain: [0, " . $max_value . "]
-                                    } 
-                                },
-                                itemSelector: '#heatmap',
-                                tooltip: { 
-                                    enabled: true, 
-                                    text: function(date, value) { 
-                                        return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
-                                    } 
-                                }
-                            }, [
-                                [CalHeatmap.LegendLite, { itemSelector: '#heatmap-legend' }]
-                            ]);
-                            console.log('Heatmap initialized successfully.');
-                        } catch (e) {
-                            console.error('Heatmap initialization failed:', e);
-                            document.getElementById('heatmap').innerHTML = '<p>Error rendering heatmap. See console for details.</p>';
-                        }
-                    });
-                })();
+                    console.log('Initializing heatmap with data:', " . json_encode($heatmap_json) . ");
+                    try {
+                        var cal = new CalHeatmap();
+                        cal.paint({
+                            data: " . json_encode($heatmap_json) . ",
+                            date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
+                            range: 12,
+                            domain: { type: 'month', padding: [0, 10, 0, 10], label: { text: 'MMM', position: 'top' } },
+                            subDomain: { type: 'day', width: 12, height: 12, radius: 2 },
+                            scale: { 
+                                color: { 
+                                    range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
+                                    type: 'linear',
+                                    domain: [0, " . $max_value . "]
+                                } 
+                            },
+                            itemSelector: '#heatmap',
+                            tooltip: { 
+                                enabled: true, 
+                                text: function(date, value) { 
+                                    return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
+                                } 
+                            }
+                        }, [
+                            [CalHeatmap.LegendLite, { itemSelector: '#heatmap-legend' }]
+                        ]);
+                        console.log('Heatmap initialized successfully.');
+                    } catch (e) {
+                        console.error('Heatmap initialization failed:', e);
+                        document.getElementById('heatmap').innerHTML = '<p>Error rendering heatmap: ' + e.message + '</p>';
+                    }
+                });
             </script>";
         }
 
