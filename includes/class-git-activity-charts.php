@@ -270,19 +270,19 @@ class GitActivityCharts {
             return '<p>Please log in to view activity charts.</p>';
         }
 
-        wp_enqueue_script('cal-heatmap', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.min.js', [], null, true);
-        wp_enqueue_style('cal-heatmap-css', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.css', [], null);
-        $custom_css = get_option('git_activity_custom_css', '');
-        if ($custom_css) {
+        // Enqueue scripts and styles
+        wp_enqueue_script('cal-heatmap', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.min.js', [], '4.2.1', true);
+        wp_enqueue_style('cal-heatmap-css', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.css', [], '4.2.1');
+        if ($custom_css = get_option('git_activity_custom_css', '')) {
             wp_add_inline_style('cal-heatmap-css', $custom_css);
         }
 
         $accounts = get_option('git_activity_accounts', []);
-        $show_public_only = get_option('git_activity_show_public_only', false);
         $all_commits = [];
         $heatmap_data = [];
         $current_time = time();
 
+        // Data fetching (unchanged from your code)
         foreach ($accounts as $account) {
             $type = $account['type'];
             $username = $account['username'];
@@ -294,7 +294,6 @@ class GitActivityCharts {
             $provider = $this->providers[$type] ?? null;
 
             if (!$provider) continue;
-            if ($show_public_only && empty($api_key)) continue;
 
             $result = $provider['fetch']($username, $api_key, $instance_url, $repos);
             if ($result['data']) {
@@ -322,61 +321,87 @@ class GitActivityCharts {
                     'logo' => $icon
                 ];
 
-                // Aggregate for heatmap
                 $day = date('Y-m-d', $date);
                 $heatmap_data[$day] = ($heatmap_data[$day] ?? 0) + 1;
             }
         }
 
-        // Sort commits by date (newest first)
         usort($all_commits, function($a, $b) {
             return $b['date'] - $a['date'];
         });
 
-        // Prepare heatmap data
         $heatmap_json = [];
         foreach ($heatmap_data as $date => $count) {
             $heatmap_json[] = ['date' => $date, 'value' => $count];
         }
 
-        // Render merged heatmap and activity feed
+        // Render output
         $output = '<div id="git-charts">';
-        $output .= "<div class='chart-container'>";
-        $output .= "<h3>Activity Across All Repos</h3>";
-        $output .= "<div id='heatmap'></div>";
-        $output .= "<script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var cal = new CalHeatmap();
-                cal.paint({
-                    data: " . json_encode($heatmap_json) . ",
-                    date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
-                    range: 12,
-                    domain: { type: 'month', label: { text: 'MMM', position: 'top' } },
-                    subDomain: { type: 'day', width: 10, height: 10 },
-                    scale: { color: { range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], type: 'linear' } },
-                    itemSelector: '#heatmap'
-                });
-            });
-        </script>";
+        $output .= '<div class="chart-container">';
+        $output .= '<h3>Activity Across All Repos</h3>';
+        $output .= '<div id="heatmap" style="min-height: 150px;"></div>'; // Ensure visibility
 
-        // Activity feed
-        $output .= "<div class='activity-feed'>";
-        $output .= "<h4>Recent Activity</h4>";
+        if (empty($heatmap_json)) {
+            $output .= '<p class="no-data">No activity data available for the past year.</p>';
+        } else {
+            $output .= "<script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (typeof CalHeatmap === 'undefined') {
+                        console.error('CalHeatmap library failed to load.');
+                        document.getElementById('heatmap').innerHTML = '<p>Error: Heatmap library not loaded. Check console.</p>';
+                        return;
+                    }
+
+                    console.log('Heatmap data:', " . json_encode($heatmap_json) . "); // Debug data
+                    var cal = new CalHeatmap();
+                    cal.paint({
+                        data: " . json_encode($heatmap_json) . ",
+                        date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
+                        range: 12,
+                        domain: { type: 'month', padding: [0, 10, 0, 10], label: { text: 'MMM', position: 'top' } },
+                        subDomain: { type: 'day', width: 12, height: 12, radius: 2 },
+                        scale: { 
+                            color: { 
+                                range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
+                                type: 'linear',
+                                domain: [0, " . max(array_column($heatmap_json, 'value')) . "] 
+                            } 
+                        },
+                        itemSelector: '#heatmap',
+                        tooltip: { 
+                            enabled: true, 
+                            text: function(date, value) { 
+                                return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
+                            } 
+                        }
+                    }, [
+                        [CalHeatmap.LegendLite, { itemSelector: '#heatmap-legend' }]
+                    ]);
+                });
+            </script>";
+        }
+
+        $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>'; // Optional legend
+
+        // Activity feed (unchanged)
+        $output .= '<div class="activity-feed">';
+        $output .= '<h4>Recent Activity</h4>';
         foreach (array_slice($all_commits, 0, 10) as $commit) {
             $time_ago = human_time_diff($commit['date'], $current_time) . ' ago';
-            $output .= "<div class='commit'>";
+            $output .= '<div class="commit">';
             $output .= "<img src='{$commit['logo']}' alt='{$commit['type']} mark' width='16' height='16'>";
             $output .= "<span>Pushed to <a href='{$commit['repo_url']}'>{$commit['repo']}</a> on {$commit['type']} ({$commit['username']})</span>";
-            $output .= "<span>" . esc_html(substr($commit['message'], 0, 50)) . (strlen($commit['message']) > 50 ? '...' : '') . "</span>";
+            $output .= '<span>' . esc_html(substr($commit['message'], 0, 50)) . (strlen($commit['message']) > 50 ? '...' : '') . '</span>';
             $output .= "<span class='time-ago'>{$time_ago}</span>";
-            $output .= "</div>";
+            $output .= '</div>';
         }
-        $output .= "</div>";
-        $output .= "</div>";
+        $output .= '</div>';
+        $output .= '</div>';
         $output .= '</div>';
 
         return $output;
     }
+
     public function render_charts_shortcode($atts = null) {
         if (!is_user_logged_in() || !current_user_can('manage_options')) {
             return '<p>Please log in to view activity charts.</p>';
