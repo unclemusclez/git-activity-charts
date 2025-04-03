@@ -265,9 +265,12 @@ class GitActivityCharts {
     }
         
     public function render_charts_shortcode($atts = null) {
-        // 
+        $atts = shortcode_atts([
+            'connection_id' => '',
+            'connection_ids' => ''
+        ], $atts, 'git_activity_charts');
+
         $output = '';
-        // Enqueue scripts and styles with cache-busting
         $cache_buster = time();
         wp_enqueue_script('d3', plugins_url('assets/js/d3.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '7.8.5', true);
         wp_enqueue_script('cal-heatmap', plugins_url('assets/js/cal-heatmap.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", ['d3'], '4.2.1', true);
@@ -278,56 +281,55 @@ class GitActivityCharts {
             return '<p>' . __('No Git accounts configured. Please check the plugin settings.', 'git-activity-charts') . '</p>';
         }
 
+        // Filter accounts
+        if ($atts['connection_id']) {
+            $accounts = array_filter($accounts, function($account, $index) use ($atts) {
+                return $index == $atts['connection_id'];
+            }, ARRAY_FILTER_USE_BOTH);
+        } elseif ($atts['connection_ids']) {
+            $ids = array_map('intval', explode(',', $atts['connection_ids']));
+            $accounts = array_filter($accounts, function($account, $index) use ($ids) {
+                return in_array($index, $ids);
+            }, ARRAY_FILTER_USE_BOTH);
+        }
+
         $all_commits = [];
         $heatmap_data = [];
         $current_time = time();
 
-        foreach ($accounts as $account) {
+        // Aggregate all commits
+        foreach ($accounts as $index => $account) {
             $type = $account['type'];
             $username = $account['username'];
             $api_key = $account['api_key'];
             $instance_url = $account['instance_url'];
-            $use_color_logo = isset($account['use_color_logo']) ? (bool)$account['use_color_logo'] : false;
-            $custom_logo = isset($account['custom_logo']) ? $account['custom_logo'] : '';
             $repos = $account['repos'];
             $provider = $this->providers[$type] ?? null;
 
-            if (!$provider) continue;
+            if (!$provider) {
+                error_log("Provider not found for type: {$type}");
+                continue;
+            }
 
             $result = $provider['fetch']($username, $api_key, $instance_url, $repos);
             if ($result['data']) {
                 $commits = $result['data'];
             } else {
+                error_log("Failed to fetch data for {$username} ({$type}): " . print_r($result, true));
                 if (current_user_can('manage_options')) {
-                    $error_msg = "Failed to fetch data for {$username} ({$type}). Check API key or repository access.";
-                    update_option("git_activity_error_{$type}_{$username}", $error_msg);
+                    update_option("git_activity_error_{$type}_{$username}", "Failed to fetch data for {$username} ({$type}). Check API key or repository access.");
                 }
                 continue;
             }
 
-            $icon = $custom_logo;
-            if (!$icon) {
-                if ($type === 'custom') {
-                    $icon = plugins_url('assets/images/default-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_FILE);
-                } else {
-                    $logo_variant = $use_color_logo ? 'color' : 'dark';
-                    $logo_filename = "{$type}-mark-{$logo_variant}.svg";
-                    $logo_path = "assets/images/{$logo_filename}";
-                    if (!file_exists(GIT_ACTIVITY_CHARTS_PLUGIN_DIR . $logo_path)) {
-                        $logo_variant = ($logo_variant === 'color') ? 'dark' : 'color';
-                        $logo_filename = "{$type}-mark-{$logo_variant}.svg";
-                        $logo_path = "assets/images/{$logo_filename}";
-                    }
-                    $icon = plugins_url($logo_path, GIT_ACTIVITY_CHARTS_PLUGIN_FILE);
-                }
-            }
+            $icon = $account['custom_logo'] ?: ($type === 'custom' ? plugins_url('assets/images/default-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) : plugins_url("assets/images/{$type}-mark-dark.svg", GIT_ACTIVITY_CHARTS_PLUGIN_FILE));
 
             foreach ($commits as $commit) {
                 $date = $this->get_commit_date($commit, $type === 'github' ? 'committed_date' : 'committed_date');
                 if (!$date) continue;
-            
+
                 $contribution_count = $type === 'github' ? ($commit['contributionCount'] ?? 1) : 1;
-            
+
                 $all_commits[] = [
                     'date' => $date,
                     'message' => "Contributed $contribution_count times",
@@ -338,71 +340,90 @@ class GitActivityCharts {
                     'logo' => $icon,
                     'contributionCount' => $contribution_count
                 ];
-            
+
                 $day = date('Y-m-d', $date);
                 $heatmap_data[$day] = ($heatmap_data[$day] ?? 0) + $contribution_count;
             }
-            
-            usort($all_commits, function($a, $b) {
-                return $b['date'] - $a['date'];
-            });
-            
-            $heatmap_json = [];
-            foreach ($heatmap_data as $date => $count) {
-                $heatmap_json[] = ['date' => $date, 'value' => $count];
-            }
-            
-            $max_value = max(array_column($heatmap_json, 'value', 1)) ?: 1;
-            
-            $output .= '<div id="git-charts">';
-            $output .= '<div class="chart-container">';
-            $output .= '<h3>Activity Across All Repos</h3>';
-            $output .= '<div style="max-width: 100%; overflow-x: auto;">'; // Enable horizontal scrolling
-            $output .= '<div id="heatmap" style="min-height: 150px;"></div>';
-            
-            if (empty($heatmap_json)) {
-                $output .= '<p class="no-data">No activity data available for the past year.</p>';
-            } else {
-                $output .= '<div id="heatmap-legend" class="cal-heatmap-legend"></div>';
-                // In render_charts_shortcode(), after heatmap initialization
-                $output .= "<script type='text/javascript'>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        if (typeof d3 === 'undefined' || typeof CalHeatmap === 'undefined') {
-                            console.error('Required libraries not loaded.');
-                            document.getElementById('heatmap').innerHTML = '<p>Chart library failed to load.</p>';
-                            return;
-                        }
-                        var cal = new CalHeatmap();
-                        cal.paint({
-                            data: " . json_encode($heatmap_json) . ",
-                            date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
-                            range: 13,
-                            domain: { type: 'month', label: { text: 'MMM', position: 'top' } },
-                            subDomain: { type: 'ghDay', width: 10, height: 10 },
-                            scale: { color: { range: ['#ebedf0', '#216e39'], domain: [0, " . $max_value . "] } },
-                            itemSelector: '#heatmap'
-                        });
-                    });
-                </script>";
-            }
         }
+
+        usort($all_commits, function($a, $b) {
+            return $b['date'] - $a['date'];
+        });
+
+        $heatmap_json = array_map(function($date, $count) {
+            return ['date' => $date, 'value' => $count];
+        }, array_keys($heatmap_data), $heatmap_data);
+        $max_value = max(array_column($heatmap_json, 'value')) ?: 1;
+
+        // Single heatmap container
+        $output .= '<div id="git-charts">';
+        $output .= '<div class="chart-container">';
+        $output .= '<h3>Activity Across All Repos</h3>';
+        $output .= '<div style="max-width: 100%; overflow-x: auto;">';
+        $output .= '<div id="heatmap" style="min-height: 150px;"></div>';
+        $output .= empty($heatmap_json) ? '<p class="no-data">No activity data available.</p>' : '';
         $output .= '</div>'; // Close scrolling div
+        $output .= '<div id="heatmap-legend" class="cal-heatmap-legend"></div>';
+
+        // Single JavaScript block
+        $output .= "<script type='text/javascript'>
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof d3 === 'undefined' || typeof CalHeatmap === 'undefined') {
+                    console.error('D3 or CalHeatmap not loaded.');
+                    document.getElementById('heatmap').innerHTML = '<p>Chart library failed to load.</p>';
+                    return;
+                }
+                var cal = new CalHeatmap();
+                cal.paint({
+                    data: " . json_encode($heatmap_json) . ",
+                    date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
+                    range: 13,
+                    domain: { type: 'month', gutter: 1, label: { text: 'MMM', position: 'top' } },
+                    subDomain: { type: 'ghDay', width: 10, height: 10, radius: 1, gutter: 1 },
+                    scale: { 
+                        color: { 
+                            range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
+                            type: 'linear',
+                            domain: [0, " . $max_value . "]
+                        } 
+                    },
+                    itemSelector: '#heatmap',
+                    tooltip: { 
+                        enabled: true, 
+                        text: function(date, value) { 
+                            return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
+                        } 
+                    }
+                });
+                document.getElementById('heatmap-legend').innerHTML = '<span>Less</span>' +
+                    '<div class=\"legend-square\" style=\"background-color: #ebedf0;\"></div>' +
+                    '<div class=\"legend-square\" style=\"background-color: #9be9a8;\"></div>' +
+                    '<div class=\"legend-square\" style=\"background-color: #40c463;\"></div>' +
+                    '<div class=\"legend-square\" style=\"background-color: #30a14e;\"></div>' +
+                    '<div class=\"legend-square\" style=\"background-color: #216e39;\"></div>' +
+                    '<span>More</span>';
+            });
+        </script>";
 
         // Activity Feed
         $output .= '<div class="activity-feed">';
         $output .= '<h4>Recent Activity</h4>';
-        foreach (array_slice($all_commits, 0, 10) as $commit) {
-            $time_ago = human_time_diff($commit['date'], $current_time) . ' ago';
-            $output .= '<div class="commit">';
-            $output .= "<img src='{$commit['logo']}' alt='{$commit['type']} mark' width='16' height='16'>";
-            $output .= "<span>Pushed to <a href='{$commit['repo_url']}'>{$commit['repo']}</a> on {$commit['type']} ({$commit['username']})</span>";
-            $output .= '<span>' . esc_html(substr($commit['message'], 0, 50)) . (strlen($commit['message']) > 50 ? '...' : '') . '</span>';
-            $output .= "<span class='time-ago'>{$time_ago}</span>";
-            $output .= '</div>';
+        if (empty($all_commits)) {
+            $output .= '<p>No recent activity.</p>';
+        } else {
+            foreach (array_slice($all_commits, 0, 10) as $commit) {
+                $time_ago = human_time_diff($commit['date'], $current_time) . ' ago';
+                $output .= '<div class="commit">';
+                $output .= "<img src='{$commit['logo']}' alt='{$commit['type']} mark' width='16' height='16'>";
+                $output .= "<span>Pushed to <a href='{$commit['repo_url']}'>{$commit['repo']}</a> on {$commit['type']} ({$commit['username']})</span>";
+                $output .= '<span>' . esc_html(substr($commit['message'], 0, 50)) . (strlen($commit['message']) > 50 ? '...' : '') . '</span>';
+                $output .= "<span class='time-ago'>{$time_ago}</span>";
+                $output .= '</div>';
+            }
         }
         $output .= '</div>';
-        $output .= '</div>';
-        $output .= '</div>';
+        $output .= '</div>'; // Close chart-container
+        $output .= '</div>'; // Close git-charts
 
         return $output;
     }
