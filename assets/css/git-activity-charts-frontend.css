@@ -1,136 +1,100 @@
-/* Default styles based on your initial CSS */
+/* Chart Container */
 #git-charts .chart-container {
   margin-bottom: 2em;
-  padding: 1.5em; /* Increased padding */
-  border: 1px solid #e0e0e0; /* Lighter border */
-  border-radius: 8px; /* More rounded corners */
-  background-color: #f9f9f9; /* Slight background tint */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow */
-  position: relative; /* Needed for absolute positioned elements inside if any */
-  overflow: hidden; /* Prevent elements spilling out */
+  padding: 1.5em;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  text-align: left; /* Remove text-align: center to avoid layout issues */
 }
 
-#git-charts .chart-title {
-  display: flex;
-  align-items: center;
-  gap: 0.7em; /* Slightly more gap */
-  margin-top: 0;
-  margin-bottom: 1.5em; /* More space below title */
-  font-size: 1.3em; /* Slightly larger title */
-  font-weight: 600; /* Bolder */
-  line-height: 1.2;
-  color: #333; /* Default title color if not overridden */
-}
-
-#git-charts .provider-badge img {
-  width: 28px; /* Slightly larger logo */
-  height: 28px;
-  vertical-align: middle;
-  margin-left: 8px; /* Adjust spacing */
-  transition: transform 0.2s ease-in-out;
-}
-#git-charts .provider-badge:hover img {
-  transform: scale(1.1); /* Slight hover effect */
-}
-
-#git-charts .error-message,
-#git-charts .no-data {
-  /* Style both error and no-data messages */
-  color: #777; /* Default to neutral grey */
-  font-style: italic;
-  margin-top: 1em;
-  padding: 1em;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  background-color: #fff;
-  text-align: center;
-}
-
-#git-charts .error-message {
-  /* Specific error styling */
-  color: #d32f2f;
-  border-color: #fbcdd1;
-  background-color: #ffebee;
-  font-style: normal; /* Errors shouldn't be italic */
-  font-weight: 500;
-}
-
-#git-charts .loading-placeholder {
-  text-align: center;
-  padding: 3em 1em; /* More padding */
-  color: #999; /* Lighter color */
-  font-size: 1.1em;
-  min-height: 100px; /* Ensure some space while loading */
-  display: flex; /* Center vertically and horizontally */
-  align-items: center;
-  justify-content: center;
-}
-
-/* Style for the canvas container */
-#git-charts canvas {
-  max-width: 100%;
-  height: auto; /* Let chart.js handle height based on aspect ratio */
-  min-height: 250px; /* Minimum chart height */
-}
-
-/* Admin Settings Page Basic Styling */
-.git-activity-settings .account-group {
-  border: 1px solid #ccd0d4;
-  padding: 0 1.5em 1.5em 1.5em;
-  margin-bottom: 1.5em;
-  background: #fff;
-  border-radius: 4px;
-}
-.git-activity-settings .account-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8em 0;
-  margin-bottom: 1em;
-  border-bottom: 1px solid #eee;
-}
-.git-activity-settings .account-header h4 {
-  margin: 0;
-  font-size: 1.1em;
-}
-.git-activity-settings .account-type-indicator {
-  font-weight: normal;
-  color: #555;
-  background-color: #eee;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 0.9em;
-  margin-left: 8px;
-}
-
-.git-activity-settings .form-table th {
-  width: 150px; /* Consistent label width */
-}
-.git-activity-settings .form-table td .description {
-  font-size: 0.85em;
-  color: #666;
-}
-.git-activity-settings .wp-picker-container {
-  display: inline-block;
-  margin-left: 5px;
-}
-.git-activity-settings .toggle-api-key {
-  /* Styles adjusted in PHP to position absolutely */
-  min-width: 50px; /* Ensure button text fits */
-}
+/* Heatmap Container */
 #heatmap {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none; /* Remove max-width to allow natural grid width */
+  margin: 0;
 }
-.chart-container {
-  text-align: center;
+
+/* Cal-Heatmap Specific Styles */
+.cal-heatmap-container {
+  width: 100%;
+  overflow: visible; /* Ensure the grid can expand */
 }
+
+.cal-heatmap-container .graph {
+  margin: 0;
+}
+
+.cal-heatmap-container .graph .subdomain {
+  margin: 0;
+  padding: 0;
+}
+
+.cal-heatmap-container .graph-rect {
+  stroke: none;
+}
+
+.cal-heatmap-container .subdomain {
+  fill: #ebedf0; /* Match GitHub's base color */
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+}
+
+.cal-heatmap-container .domain-label {
+  font-size: 10px;
+}
+
+/* Legend Styles */
+.cal-heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.cal-heatmap-legend span {
+  margin-right: 5px;
+}
+
+.cal-heatmap-legend .legend-square {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 1px;
+}
+
+/* No Data Message */
 .no-data {
   color: #666;
   font-style: italic;
+  text-align: center;
+  padding: 1em;
 }
 
+/* Activity Feed */
 .commit {
   margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.commit img {
+  width: 16px;
+  height: 16px;
+}
+
+.commit span {
+  font-size: 0.9em;
+}
+
+.commit .time-ago {
+  color: #666;
+  font-size: 0.85em;
+  margin-left: auto;
 }

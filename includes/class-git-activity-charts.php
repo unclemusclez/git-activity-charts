@@ -363,18 +363,6 @@ class GitActivityCharts {
         if (empty($heatmap_json)) {
             $output .= '<p class="no-data">No activity data available for the past year.</p>';
         } else {
-            // Inline CSS to match GitHub's style
-            $output .= '<style>
-                .cal-heatmap-container { width: 100%; }
-                .cal-heatmap-container .graph { margin: 0; }
-                .cal-heatmap-container .graph .subdomain { margin: 0; padding: 0; }
-                .cal-heatmap-container .graph-rect { stroke: none; }
-                .cal-heatmap-container .subdomain { fill: #ebedf0; width: 10px; height: 10px; border-radius: 1px; }
-                .cal-heatmap-container .domain-label { font-size: 10px; }
-                .cal-heatmap-legend { display: flex; align-items: center; justify-content: flex-end; margin-top: 10px; }
-                .cal-heatmap-legend span { margin-right: 5px; }
-                .cal-heatmap-legend .legend-square { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 1px; }
-            </style>';
             $output .= '<div id="heatmap-legend" class="cal-heatmap-legend"></div>';
             $output .= "<script type='text/javascript'>
                 console.log('Script loaded at: ' + new Date().toISOString());
@@ -406,7 +394,7 @@ class GitActivityCharts {
                         var cal = new CalHeatmap();
                         cal.paint({
                             data: " . json_encode($heatmap_json) . ",
-                            date: { start: startDate, weekStartOn: 0 }, // Start week on Sunday (0 = Sunday, 1 = Monday)
+                            date: { start: startDate, weekStartOn: 0 }, // Start week on Sunday
                             range: 53,
                             domain: { type: 'week', gutter: 3, label: { text: 'MMM', position: 'top' } },
                             subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 3 },
@@ -446,6 +434,7 @@ class GitActivityCharts {
 
         $output .= '</div>'; // Close scrolling div
 
+        // Activity Feed
         $output .= '<div class="activity-feed">';
         $output .= '<h4>Recent Activity</h4>';
         foreach (array_slice($all_commits, 0, 10) as $commit) {
