@@ -265,6 +265,8 @@ class GitActivityCharts {
     }
         
     public function render_charts_shortcode($atts = null) {
+        // 
+        $output = '';
         // Enqueue scripts and styles with cache-busting
         $cache_buster = time();
         wp_enqueue_script('d3', plugins_url('assets/js/d3.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '7.8.5', true);
