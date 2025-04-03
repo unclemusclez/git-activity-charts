@@ -265,8 +265,9 @@ class GitActivityCharts {
                 return '#';
         }
     }
+        
     public function render_charts_shortcode($atts = null) {
-        // Enqueue scripts globally in enqueue_frontend_scripts, but ensure they're here too for shortcode
+        // Enqueue scripts and styles with cache-busting
         $cache_buster = time();
         wp_enqueue_script('d3', plugins_url('assets/js/d3.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '7.8.5', true);
         wp_enqueue_script('cal-heatmap', plugins_url('assets/js/cal-heatmap.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", ['d3'], '4.2.1', true);
@@ -336,7 +337,9 @@ class GitActivityCharts {
                 ];
 
                 $day = date('Y-m-d', $date);
-                $heatmap_data[$day] = ($heatmap_data[$day] ?? 0) + 1;
+                // Increment contribution count per day (not just 1)
+                $contribution_count = $type === 'github' ? ($commit['contributionCount'] ?? 1) : 1;
+                $heatmap_data[$day] = ($heatmap_data[$day] ?? 0) + $contribution_count;
             }
         }
 
@@ -399,7 +402,7 @@ class GitActivityCharts {
                                     return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
                                 } 
                             }
-                        }); // Removed LegendLite to avoid plugin error
+                        });
                         console.log('Heatmap initialized successfully.');
                     } catch (e) {
                         console.error('Heatmap initialization failed:', e);
