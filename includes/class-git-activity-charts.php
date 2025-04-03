@@ -346,16 +346,17 @@ class GitActivityCharts {
         } else {
             $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>';
             $output .= "<script type='text/javascript'>
-                window.addEventListener('load', function() {
-                    console.log('Window loaded at: ' + new Date().toISOString());
-                    
+                console.log('Inline script loaded at: ' + new Date().toISOString());
+                
+                function initializeHeatmap() {
+                    console.log('Attempting to initialize heatmap...');
                     if (typeof d3 === 'undefined') {
                         console.error('D3.js not loaded.');
                         document.getElementById('heatmap').innerHTML = '<p>Error: D3.js not loaded.</p>';
                         return;
                     }
                     if (typeof CalHeatmap === 'undefined') {
-                        console.error('CalHeatmap not loaded.');
+                        console.error('CalHeatmap not loaded yet.');
                         document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap not loaded.</p>';
                         return;
                     }
@@ -391,6 +392,20 @@ class GitActivityCharts {
                         console.error('Heatmap initialization failed:', e);
                         document.getElementById('heatmap').innerHTML = '<p>Error rendering heatmap: ' + e.message + '</p>';
                     }
+                }
+
+                // Try immediately after load, with a fallback delay
+                window.addEventListener('load', function() {
+                    console.log('Window loaded at: ' + new Date().toISOString());
+                    initializeHeatmap();
+                    
+                    // Fallback: retry after 1 second if CalHeatmap isn't ready
+                    setTimeout(function() {
+                        if (typeof CalHeatmap === 'undefined') {
+                            console.warn('CalHeatmap still not defined, retrying...');
+                            initializeHeatmap();
+                        }
+                    }, 1000);
                 });
             </script>";
         }
