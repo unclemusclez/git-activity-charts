@@ -411,13 +411,13 @@ class GitActivityCharts {
                 cal.paint({
                     data: " . json_encode($heatmap_json) . ",
                     animationDuration: 0,
-                    // date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
-                    date: { 
-                        start: new Date(),
-                    },
+                    date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
+                    // date: { 
+                    //     start: new Date(),
+                    // },
                     verticalOrientation: 1,
                     range: 53,
-                    domain: { type: 'week', sort:  'desc'},
+                    domain: { type: 'week', sort:  'desc', label: { string: 'MMM', position: 'right' },
                     subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 0 },
                     scale: { 
                         color: { 
