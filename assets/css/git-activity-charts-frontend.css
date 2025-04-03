@@ -130,3 +130,19 @@
   color: #666;
   font-style: italic;
 }
+
+#heatmap {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.chart-container {
+  text-align: center;
+}
+.no-data {
+  color: #666;
+  font-style: italic;
+}
+.commit {
+  margin: 10px 0;
+}

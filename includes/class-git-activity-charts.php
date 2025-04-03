@@ -270,19 +270,25 @@ class GitActivityCharts {
             return '<p>Please log in to view activity charts.</p>';
         }
 
-        // Enqueue scripts and styles
+        // Enqueue Cal-Heatmap with a handle and version
         wp_enqueue_script('cal-heatmap', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.min.js', [], '4.2.1', true);
         wp_enqueue_style('cal-heatmap-css', 'https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.1/dist/cal-heatmap.css', [], '4.2.1');
-        if ($custom_css = get_option('git_activity_custom_css', '')) {
-            wp_add_inline_style('cal-heatmap-css', $custom_css);
-        }
 
+        // Enqueue custom script with dependency on cal-heatmap
+        wp_enqueue_script(
+            'git-activity-charts-heatmap',
+            plugins_url('assets/js/heatmap.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE), // Create this file
+            ['cal-heatmap'], // Dependency ensures CalHeatmap loads first
+            GIT_ACTIVITY_CHARTS_VERSION,
+            true
+        );
+
+        // Pass heatmap data to JavaScript
         $accounts = get_option('git_activity_accounts', []);
         $all_commits = [];
         $heatmap_data = [];
         $current_time = time();
 
-        // Data fetching (unchanged from your code)
         foreach ($accounts as $account) {
             $type = $account['type'];
             $username = $account['username'];
@@ -335,55 +341,22 @@ class GitActivityCharts {
             $heatmap_json[] = ['date' => $date, 'value' => $count];
         }
 
-        // Render output
+        // Localize data for the custom script
+        wp_localize_script('git-activity-charts-heatmap', 'gitActivityHeatmapData', [
+            'heatmapData' => $heatmap_json,
+            'maxValue' => max(array_column($heatmap_json, 'value', 1)) ?: 1 // Avoid division by zero
+        ]);
+
+        // Render HTML
         $output = '<div id="git-charts">';
         $output .= '<div class="chart-container">';
         $output .= '<h3>Activity Across All Repos</h3>';
-        $output .= '<div id="heatmap" style="min-height: 150px;"></div>'; // Ensure visibility
-
+        $output .= '<div id="heatmap" style="min-height: 150px;"></div>';
         if (empty($heatmap_json)) {
             $output .= '<p class="no-data">No activity data available for the past year.</p>';
-        } else {
-            $output .= "<script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    if (typeof CalHeatmap === 'undefined') {
-                        console.error('CalHeatmap library failed to load.');
-                        document.getElementById('heatmap').innerHTML = '<p>Error: Heatmap library not loaded. Check console.</p>';
-                        return;
-                    }
-
-                    console.log('Heatmap data:', " . json_encode($heatmap_json) . "); // Debug data
-                    var cal = new CalHeatmap();
-                    cal.paint({
-                        data: " . json_encode($heatmap_json) . ",
-                        date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
-                        range: 12,
-                        domain: { type: 'month', padding: [0, 10, 0, 10], label: { text: 'MMM', position: 'top' } },
-                        subDomain: { type: 'day', width: 12, height: 12, radius: 2 },
-                        scale: { 
-                            color: { 
-                                range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
-                                type: 'linear',
-                                domain: [0, " . max(array_column($heatmap_json, 'value')) . "] 
-                            } 
-                        },
-                        itemSelector: '#heatmap',
-                        tooltip: { 
-                            enabled: true, 
-                            text: function(date, value) { 
-                                return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
-                            } 
-                        }
-                    }, [
-                        [CalHeatmap.LegendLite, { itemSelector: '#heatmap-legend' }]
-                    ]);
-                });
-            </script>";
         }
+        $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>';
 
-        $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>'; // Optional legend
-
-        // Activity feed (unchanged)
         $output .= '<div class="activity-feed">';
         $output .= '<h4>Recent Activity</h4>';
         foreach (array_slice($all_commits, 0, 10) as $commit) {
@@ -401,7 +374,6 @@ class GitActivityCharts {
 
         return $output;
     }
-
     public function render_charts_shortcode($atts = null) {
         if (!is_user_logged_in() || !current_user_can('manage_options')) {
             return '<p>Please log in to view activity charts.</p>';
