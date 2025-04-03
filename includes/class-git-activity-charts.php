@@ -359,7 +359,7 @@ class GitActivityCharts {
         $output .= '<h3>Activity Across All Repos</h3>';
         $output .= '<div style="max-width: 100%; overflow-x: auto;">'; // Enable horizontal scrolling
         $output .= '<div id="heatmap" style="min-height: 150px;"></div>';
-
+        
         if (empty($heatmap_json)) {
             $output .= '<p class="no-data">No activity data available for the past year.</p>';
         } else {
@@ -379,7 +379,7 @@ class GitActivityCharts {
                         document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap not loaded.</p>';
                         return;
                     }
-
+        
                     var startDate = new Date();
                     startDate.setFullYear(startDate.getFullYear() - 1);
                     startDate.setDate(startDate.getDate() + 1);
@@ -389,7 +389,7 @@ class GitActivityCharts {
                     console.log('Heatmap data:', " . json_encode($heatmap_json) . ");
                     console.log('Max contribution value: " . $max_value . "');
                     console.log('Raw commits:', " . json_encode($all_commits) . ");
-
+        
                     try {
                         var cal = new CalHeatmap();
                         cal.paint({
@@ -397,7 +397,7 @@ class GitActivityCharts {
                             date: { start: startDate, weekStartOn: 0 }, // Start week on Sunday
                             range: 53,
                             domain: { type: 'week', gutter: 3, label: { text: 'MMM', position: 'top' } },
-                            subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 3 },
+                            subDomain: { type: 'x_day', width: 10, height: 10, radius: 1, gutter: 3 }, // Use 'x_day' for vertical stacking
                             scale: { 
                                 color: { 
                                     range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
@@ -413,7 +413,7 @@ class GitActivityCharts {
                                 } 
                             }
                         });
-
+        
                         var legend = document.getElementById('heatmap-legend');
                         legend.innerHTML = '<span>Less</span>' +
                             '<div class=\"legend-square\" style=\"background-color: #ebedf0;\"></div>' +
@@ -422,7 +422,7 @@ class GitActivityCharts {
                             '<div class=\"legend-square\" style=\"background-color: #30a14e;\"></div>' +
                             '<div class=\"legend-square\" style=\"background-color: #216e39;\"></div>' +
                             '<span>More</span>';
-
+        
                         console.log('Heatmap initialized successfully.');
                     } catch (e) {
                         console.error('Heatmap initialization failed:', e);
@@ -431,7 +431,7 @@ class GitActivityCharts {
                 });
             </script>";
         }
-
+        
         $output .= '</div>'; // Close scrolling div
 
         // Activity Feed

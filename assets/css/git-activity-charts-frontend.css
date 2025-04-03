@@ -14,8 +14,9 @@
 /* Heatmap Container */
 #heatmap {
   width: 100%;
-  max-width: none; /* Remove max-width to allow natural grid width */
+  max-width: none;
   margin: 0;
+  min-height: 128px; /* 88px for 7 rows + 40px for month labels */
 }
 
 /* Cal-Heatmap Specific Styles */
