@@ -63,7 +63,8 @@ class GitActivityCharts {
                         }
                     }
                     return ['data' => $commits];
-                },
+                }
+            ],
             'gitlab' => [
                 'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
                     $base_url = $instance_url ?: 'https://gitlab.com';
