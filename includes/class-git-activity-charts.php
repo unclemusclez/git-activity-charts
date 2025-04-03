@@ -418,20 +418,20 @@ class GitActivityCharts {
                     // verticalOrientation: 1,
                     range: 13,
                     domain: { 
-                        type: 'month', 
+                        type: 'day', 
                         sort:  'desc', 
-                        label: { 
-                            string: 'MM', 
-                            position: 'top' 
+                        // label: { 
+                        //     string: 'MM', 
+                        //     position: 'top' 
                         }
                     },
-                    subDomain: { 
-                        type: 'ghDay', 
-                        width: 10, 
-                        height: 10, 
-                        radius: 0, 
-                        gutter: 1 
-                    },
+                    // subDomain: { 
+                    //     type: 'ghDay', 
+                    //     width: 10, 
+                    //     height: 10, 
+                    //     radius: 0, 
+                    //     gutter: 1 
+                    // },
                     scale: { 
                         color: { 
                             range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
