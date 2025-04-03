@@ -69,33 +69,64 @@ class GitActivityCharts {
                 'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
                     $base_url = $instance_url ?: 'https://gitlab.com';
                     $all_commits = [];
+                    error_log("GitLab Fetch Start - Username: {$username}, Instance: {$base_url}, Repos: " . implode(',', $repos));
+                    
                     foreach ($repos as $repo) {
-                        $project_url = "{$base_url}/api/v4/projects/" . urlencode($repo);
+                        $project_url = "{$base_url}/api/v4/projects/" . urlencode("{$repo}");
                         $headers = $api_key ? ['Private-Token' => $api_key] : [];
                         $repo_response = wp_remote_get($project_url, ['headers' => $headers]);
-                        if (is_wp_error($repo_response) || wp_remote_retrieve_response_code($repo_response) !== 200) {
-                            error_log("GitLab Project Error for $repo: " . wp_remote_retrieve_body($repo_response));
+                        
+                        if (is_wp_error($repo_response)) {
+                            error_log("GitLab Project Error for {$username}/{$repo}: " . $repo_response->get_error_message());
                             continue;
                         }
-                        $repo_data = json_decode(wp_remote_retrieve_body($repo_response), true);
-                        $repo_url = $repo_data['web_url'] ?? "{$base_url}/{$repo}";
+                        
+                        $response_code = wp_remote_retrieve_response_code($repo_response);
+                        $response_body = wp_remote_retrieve_body($repo_response);
+                        error_log("GitLab Project Response for {$username}/{$repo} - Code: {$response_code}, Body: " . substr($response_body, 0, 500)); // Limit body log size
+                        
+                        if ($response_code !== 200) {
+                            error_log("GitLab Project Failed - Code: {$response_code}, Body: {$response_body}");
+                            continue;
+                        }
+
+                        $repo_data = json_decode($response_body, true);
+                        $repo_url = $repo_data['web_url'] ?? "{$base_url}/{$username}/{$repo}";
                         $commits_url = "{$project_url}/repository/commits?per_page=100";
-                        $response = wp_remote_get($commits_url, ['headers' => $headers]);
-                        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-                            error_log("GitLab Commits Error for $repo: " . wp_remote_retrieve_body($response));
+                        $commits_response = wp_remote_get($commits_url, ['headers' => $headers]);
+                        
+                        if (is_wp_error($commits_response)) {
+                            error_log("GitLab Commits Error for {$username}/{$repo}: " . $commits_response->get_error_message());
                             continue;
                         }
-                        $commits = json_decode(wp_remote_retrieve_body($response), true);
+                        
+                        $commits_code = wp_remote_retrieve_response_code($commits_response);
+                        $commits_body = wp_remote_retrieve_body($commits_response);
+                        error_log("GitLab Commits Response for {$username}/{$repo} - Code: {$commits_code}, Body: " . substr($commits_body, 0, 500));
+                        
+                        if ($commits_code !== 200) {
+                            error_log("GitLab Commits Failed - Code: {$commits_code}, Body: {$commits_body}");
+                            continue;
+                        }
+
+                        $commits = json_decode($commits_body, true);
+                        if (!is_array($commits) || empty($commits)) {
+                            error_log("GitLab No Commits for {$username}/{$repo}");
+                            continue;
+                        }
+
                         foreach ($commits as $commit) {
                             $commit['repo_url'] = $repo_url;
                             $commit['repo'] = $repo;
                             $all_commits[] = $commit;
                         }
                     }
+                    
+                    error_log("GitLab Fetch End - Total Commits: " . count($all_commits));
                     return ['data' => $all_commits];
                 },
                 'color' => '#ff4500',
-                'icon' => plugins_url('assets/images/gitlab-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_FILE)
+                'icon' => plugins_url('assets/gitlab/gitlab-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_DIR)
             ],
             'custom' => [
                 'fetch' => function($username, $api_key, $instance_url = '', $repos = []) {
@@ -382,7 +413,7 @@ class GitActivityCharts {
                     animationDuration: 0,
                     date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
                     range: 1,
-                    domain: { type: 'year', gutter: 1, label: { text: 'MMM', position: 'top' } },
+                    domain: { type: 'yeay', gutter: 0, label: { text: 'MM', position: 'top' } },
                     subDomain: { type: 'ghDay', width: 10, height: 10, radius: 1, gutter: 1 },
                     scale: { 
                         color: { 
