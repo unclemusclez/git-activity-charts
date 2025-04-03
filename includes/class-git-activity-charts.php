@@ -412,9 +412,9 @@ class GitActivityCharts {
                     data: " . json_encode($heatmap_json) . ",
                     animationDuration: 0,
                     date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
-                    range: 1,
-                    domain: { type: 'year', gutter: 0, label: { text: 'MM', position: 'top' } },
-                    subDomain: { type: 'ghDay', width: 10, height: 10, radius: 1, gutter: 1 },
+                    range: 365,
+                    domain: { type: 'day', gutter: 0, label: { text: 'MMM', position: 'top' } },
+                    // subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 1 },
                     scale: { 
                         color: { 
                             range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
