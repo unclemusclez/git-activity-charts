@@ -423,7 +423,7 @@ class GitActivityCharts {
                         // label: { 
                         //     string: 'MM', 
                         //     position: 'top' 
-                        }
+                        // }
                     },
                     // subDomain: { 
                     //     type: 'ghDay', 
