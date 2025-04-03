@@ -266,9 +266,9 @@ class GitActivityCharts {
         }
     }
     public function render_charts_shortcode($atts) {
-        if (!is_user_logged_in() || !current_user_can('manage_options')) {
-            return '<p>Please log in to view activity charts.</p>';
-        }
+        // if (!is_user_logged_in() || !current_user_can('manage_options')) {
+        //     return '<p>Please log in to view activity charts.</p>';
+        // }
 
         // Enqueue local D3.js and Cal-Heatmap with cache-busting
         $cache_buster = time(); // Unique timestamp to force fresh load
