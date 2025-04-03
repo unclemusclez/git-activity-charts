@@ -415,14 +415,14 @@ class GitActivityCharts {
                         start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), 
                         weekStartOn: 0
                     },
-                    verticalOrientation: 1,
-                    range: 52,
+                    // verticalOrientation: 1,
+                    range: 13,
                     domain: { 
-                        type: 'week', 
+                        type: 'month', 
                         sort:  'desc', 
                         label: { 
-                            string: 'ddd', 
-                            position: 'right' 
+                            string: 'MM', 
+                            position: 'top' 
                         }
                     },
                     subDomain: { 
