@@ -337,7 +337,7 @@ class GitActivityCharts {
                 ];
 
                 $day = date('Y-m-d', $date);
-                // Increment contribution count per day (not just 1)
+                // Use contributionCount for GitHub, default to 1 for others
                 $contribution_count = $type === 'github' ? ($commit['contributionCount'] ?? 1) : 1;
                 $heatmap_data[$day] = ($heatmap_data[$day] ?? 0) + $contribution_count;
             }
@@ -362,6 +362,14 @@ class GitActivityCharts {
         if (empty($heatmap_json)) {
             $output .= '<p class="no-data">No activity data available for the past year.</p>';
         } else {
+            // Inline CSS to ensure tight grid and visibility
+            $output .= '<style>
+                .cal-heatmap-container { max-width: 900px; margin: 0 auto; }
+                .cal-heatmap-container .graph { margin: 0; }
+                .cal-heatmap-container .graph .subdomain { margin: 0; padding: 0; }
+                .cal-heatmap-container .graph-rect { stroke: none; }
+                .cal-heatmap-container .subdomain { fill: #ebedf0; } /* Fallback color */
+            </style>';
             $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>';
             $output .= "<script type='text/javascript'>
                 console.log('Script loaded at: ' + new Date().toISOString());
@@ -379,15 +387,24 @@ class GitActivityCharts {
                         return;
                     }
 
-                    console.log('Initializing heatmap with data:', " . json_encode($heatmap_json) . ");
+                    // Set start date to first day of 11 months ago
+                    var startDate = new Date();
+                    startDate.setMonth(startDate.getMonth() - 11);
+                    startDate.setDate(1); // First day of the month
+                    var endDate = new Date();
+                    console.log('Heatmap start date: ' + startDate.toISOString());
+                    console.log('Heatmap end date: ' + endDate.toISOString());
+                    console.log('Heatmap data:', " . json_encode($heatmap_json) . ");
+                    console.log('Max contribution value: " . $max_value . "');
+
                     try {
                         var cal = new CalHeatmap();
                         cal.paint({
                             data: " . json_encode($heatmap_json) . ",
-                            date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
+                            date: { start: startDate },
                             range: 12,
                             domain: { type: 'month', padding: [0, 10, 0, 10], label: { text: 'MMM', position: 'top' } },
-                            subDomain: { type: 'day', width: 12, height: 12, radius: 2 },
+                            subDomain: { type: 'day', width: 12, height: 12, radius: 2, gutter: 1 },
                             scale: { 
                                 color: { 
                                     range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
