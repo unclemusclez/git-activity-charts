@@ -334,9 +334,9 @@ class GitActivityCharts {
             $heatmap_json[] = ['date' => $date, 'value' => $count];
         }
 
-        $max_value = max(array_column($heatmap_json, 'value', 1)) ?: 1;
+    $max_value = max(array_column($heatmap_json, 'value', 1)) ?: 1;
 
-        // Render HTML with inline script
+        // Render HTML
         $output = '<div id="git-charts">';
         $output .= '<div class="chart-container">';
         $output .= '<h3>Activity Across All Repos</h3>';
@@ -347,8 +347,9 @@ class GitActivityCharts {
         } else {
             $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>';
             $output .= "<script type='text/javascript'>
-                console.log('Inline script loaded at: ' + new Date().toISOString());
-                
+                console.log('Script loaded at: ' + new Date().toISOString());
+                console.log('Preview mode active: " . (is_preview() ? 'true' : 'false') . "');
+
                 function initializeHeatmap() {
                     console.log('Attempting to initialize heatmap...');
                     if (typeof d3 === 'undefined') {
@@ -357,7 +358,7 @@ class GitActivityCharts {
                         return;
                     }
                     if (typeof CalHeatmap === 'undefined') {
-                        console.error('CalHeatmap not loaded yet.');
+                        console.error('CalHeatmap not loaded.');
                         document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap not loaded.</p>';
                         return;
                     }
@@ -395,14 +396,14 @@ class GitActivityCharts {
                     }
                 }
 
-                // Run after load with retries
+                // Run after full load with retries
                 window.addEventListener('load', function() {
                     console.log('Window loaded at: ' + new Date().toISOString());
                     initializeHeatmap();
-                    
-                    // Retry up to 3 times, 1 second apart
+
+                    // Retry if CalHeatmap isn't ready
                     var attempts = 0;
-                    var maxAttempts = 3;
+                    var maxAttempts = 5;
                     var retryInterval = setInterval(function() {
                         if (typeof CalHeatmap === 'undefined' && attempts < maxAttempts) {
                             console.warn('CalHeatmap not defined, retrying (' + (attempts + 1) + '/' + maxAttempts + ')...');
@@ -411,7 +412,7 @@ class GitActivityCharts {
                         } else {
                             clearInterval(retryInterval);
                             if (typeof CalHeatmap === 'undefined') {
-                                console.error('CalHeatmap never loaded after retries.');
+                                console.error('CalHeatmap failed to load after all retries.');
                             }
                         }
                     }, 1000);
