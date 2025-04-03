@@ -417,7 +417,14 @@ class GitActivityCharts {
                     },
                     verticalOrientation: 1,
                     range: 52,
-                    domain: { type: 'week', sort:  'desc', label: { string: 'MMM', position: 'right' },
+                    domain: { 
+                        type: 'week', 
+                        sort:  'desc', 
+                        label: { 
+                            string: 'MMM', 
+                            position: 'right' 
+                        }
+                    },
                     subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 0 },
                     scale: { 
                         color: { 
