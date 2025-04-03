@@ -413,7 +413,7 @@ class GitActivityCharts {
                     animationDuration: 0,
                     date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), weekStartOn: 0 },
                     range: 365,
-                    domain: { type: 'day', gutter: 0, label: { text: 'MMM', position: 'top' } },
+                    domain: { type: 'day', gutter: 0, label: { text: 'DD', position: 'top' } },
                     // subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 1 },
                     scale: { 
                         color: { 
