@@ -412,8 +412,8 @@ class GitActivityCharts {
                     data: " . json_encode($heatmap_json) . ",
                     animationDuration: 0,
                     date: { 
-                        start: new Date().setFullYear(new Date().getFullYear() - 1), 
-                        weekStartOn: 0,
+                        start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), 
+                        weekStartOn: 0
                     },
                     verticalOrientation: 1,
                     range: 52,
