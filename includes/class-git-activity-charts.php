@@ -397,7 +397,7 @@ class GitActivityCharts {
                             date: { start: startDate, weekStartOn: 0 }, // Start week on Sunday
                             range: 53,
                             domain: { type: 'week', gutter: 3, label: { text: 'MMM', position: 'top' } },
-                            subDomain: { type: 'x_day', width: 10, height: 10, radius: 1, gutter: 3 }, // Use 'x_day' for vertical stacking
+                            subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 3 }, // Revert to 'day'
                             scale: { 
                                 color: { 
                                     range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
@@ -433,7 +433,7 @@ class GitActivityCharts {
         }
         
         $output .= '</div>'; // Close scrolling div
-        
+
         // Activity Feed
         $output .= '<div class="activity-feed">';
         $output .= '<h4>Recent Activity</h4>';

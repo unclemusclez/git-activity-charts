@@ -25,6 +25,22 @@
   overflow: visible; /* Ensure the grid can expand */
 }
 
+/* Force vertical layout for subdomains */
+.cal-heatmap-container .ch-subdomain-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cal-heatmap-container .ch-subdomain-container g {
+  margin-bottom: 3px; /* Match the gutter */
+}
+
+/* Ensure domain height accommodates 7 rows */
+.cal-heatmap-container .ch-domain {
+  height: 128px; /* 7 rows * (10px height + 3px gutter) - 3px + 40px for labels */
+}
+
 .cal-heatmap-container .graph {
   margin: 0;
 }
