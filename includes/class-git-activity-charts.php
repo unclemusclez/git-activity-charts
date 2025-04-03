@@ -395,9 +395,9 @@ class GitActivityCharts {
                         cal.paint({
                             data: " . json_encode($heatmap_json) . ",
                             date: { start: startDate, weekStartOn: 0 }, // Start week on Sunday
-                            range: 53,
-                            domain: { type: 'week', gutter: 3, label: { text: 'MMM', position: 'top' } },
-                            subDomain: { type: 'day', width: 10, height: 10, radius: 1, gutter: 3 }, // Revert to 'day'
+                            range: 12,
+                            domain: { type: 'month', gutter: 0, label: { text: 'MMM', position: 'top' } },
+                            subDomain: { type: 'ghDay', width: 10, height: 10, radius: 1, gutter: 0 }, // Revert to 'day'
                             scale: { 
                                 color: { 
                                     range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
