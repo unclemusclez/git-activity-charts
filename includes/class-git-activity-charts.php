@@ -433,7 +433,7 @@ class GitActivityCharts {
         }
         
         $output .= '</div>'; // Close scrolling div
-
+        
         // Activity Feed
         $output .= '<div class="activity-feed">';
         $output .= '<h4>Recent Activity</h4>';
