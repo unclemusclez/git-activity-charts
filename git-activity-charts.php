@@ -10,7 +10,12 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Text Domain: git-activity-charts
 */
 
-
+// Guard clause to prevent multiple inclusions
+if (defined('GIT_ACTIVITY_CHARTS_LOADED')) {
+    error_log("Git Activity Charts already loaded - skipping");
+    return;
+}
+define('GIT_ACTIVITY_CHARTS_LOADED', true);
 
 if (!defined('ABSPATH')) {
     exit;
