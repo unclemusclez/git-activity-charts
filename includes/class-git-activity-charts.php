@@ -429,7 +429,7 @@ class GitActivityCharts {
                     });
                 </script>";
             }
-        
+        }
         $output .= '</div>'; // Close scrolling div
 
         // Activity Feed
