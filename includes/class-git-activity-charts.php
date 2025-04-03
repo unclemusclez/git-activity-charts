@@ -265,183 +265,12 @@ class GitActivityCharts {
                 return '#';
         }
     }
-    // public function render_charts_shortcode($atts) {
-    //     // if (!is_user_logged_in() || !current_user_can('manage_options')) {
-    //     //     return '<p>Please log in to view activity charts.</p>';
-    //     // }
-
-    //     // Enqueue local D3.js and Cal-Heatmap with cache-busting
-    //     $cache_buster = time(); // Unique timestamp to force fresh load
-    //     wp_enqueue_script('d3', plugins_url('assets/js/d3.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '7.8.5', true);
-    //     wp_enqueue_script('cal-heatmap', plugins_url('assets/js/cal-heatmap.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", ['d3'], '4.2.1', true);
-    //     wp_enqueue_style('cal-heatmap-css', plugins_url('assets/css/cal-heatmap.css', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '4.2.1');
-
-    //     // Data fetching (unchanged)
-    //     $accounts = get_option('git_activity_accounts', []);
-    //     $all_commits = [];
-    //     $heatmap_data = [];
-    //     $current_time = time();
-
-    //     foreach ($accounts as $account) {
-    //         $type = $account['type'];
-    //         $username = $account['username'];
-    //         $api_key = $account['api_key'];
-    //         $instance_url = $account['instance_url'];
-    //         $use_color_logo = $account['use_color_logo'];
-    //         $custom_logo = $account['custom_logo'];
-    //         $repos = $account['repos'];
-    //         $provider = $this->providers[$type] ?? null;
-
-    //         if (!$provider) continue;
-
-    //         $result = $provider['fetch']($username, $api_key, $instance_url, $repos);
-    //         if ($result['data']) {
-    //             $commits = $result['data'];
-    //         } else {
-    //             if (current_user_can('manage_options')) {
-    //                 $error_msg = "Failed to fetch data for {$username} ({$type}). Check API key or repository access.";
-    //                 update_option("git_activity_error_{$type}_{$username}", $error_msg);
-    //             }
-    //             continue;
-    //         }
-
-    //         $icon = $custom_logo ?: ($type === 'custom' ? ($instance_url . '/favicon.ico') : $provider['icon']);
-    //         foreach ($commits as $commit) {
-    //             $date = $this->get_commit_date($commit, $type === 'github' ? 'committed_date' : 'committed_date');
-    //             if (!$date) continue;
-
-    //             $all_commits[] = [
-    //                 'date' => $date,
-    //                 'message' => $commit['message'] ?? "Contribution",
-    //                 'repo' => $commit['repo'] ?? $username,
-    //                 'type' => $type,
-    //                 'username' => $username,
-    //                 'repo_url' => $commit['repo_url'] ?? $this->get_fallback_repo_url($type, $username, $commit['repo'] ?? $username, $instance_url),
-    //                 'logo' => $icon
-    //             ];
-
-    //             $day = date('Y-m-d', $date);
-    //             $heatmap_data[$day] = ($heatmap_data[$day] ?? 0) + 1;
-    //         }
-    //     }
-
-    //     usort($all_commits, function($a, $b) {
-    //         return $b['date'] - $a['date'];
-    //     });
-
-    //     $heatmap_json = [];
-    //     foreach ($heatmap_data as $date => $count) {
-    //         $heatmap_json[] = ['date' => $date, 'value' => $count];
-    //     }
-
-    // $max_value = max(array_column($heatmap_json, 'value', 1)) ?: 1;
-
-    //     // Render HTML
-    //     $output = '<div id="git-charts">';
-    //     $output .= '<div class="chart-container">';
-    //     $output .= '<h3>Activity Across All Repos</h3>';
-    //     $output .= '<div id="heatmap" style="min-height: 150px;"></div>';
-
-    //     if (empty($heatmap_json)) {
-    //         $output .= '<p class="no-data">No activity data available for the past year.</p>';
-    //     } else {
-    //         $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>';
-    //         $output .= "<script type='text/javascript'>
-    //             console.log('Script loaded at: ' + new Date().toISOString());
-    //             console.log('Preview mode active: " . (is_preview() ? 'true' : 'false') . "');
-
-    //             function initializeHeatmap() {
-    //                 console.log('Attempting to initialize heatmap...');
-    //                 if (typeof d3 === 'undefined') {
-    //                     console.error('D3.js not loaded.');
-    //                     document.getElementById('heatmap').innerHTML = '<p>Error: D3.js not loaded.</p>';
-    //                     return;
-    //                 }
-    //                 if (typeof CalHeatmap === 'undefined') {
-    //                     console.error('CalHeatmap not loaded.');
-    //                     document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap not loaded.</p>';
-    //                     return;
-    //                 }
-
-    //                 console.log('Initializing heatmap with data:', " . json_encode($heatmap_json) . ");
-    //                 try {
-    //                     var cal = new CalHeatmap();
-    //                     cal.paint({
-    //                         data: " . json_encode($heatmap_json) . ",
-    //                         date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
-    //                         range: 12,
-    //                         domain: { type: 'month', padding: [0, 10, 0, 10], label: { text: 'MMM', position: 'top' } },
-    //                         subDomain: { type: 'day', width: 12, height: 12, radius: 2 },
-    //                         scale: { 
-    //                             color: { 
-    //                                 range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
-    //                                 type: 'linear',
-    //                                 domain: [0, " . $max_value . "]
-    //                             } 
-    //                         },
-    //                         itemSelector: '#heatmap',
-    //                         tooltip: { 
-    //                             enabled: true, 
-    //                             text: function(date, value) { 
-    //                                 return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
-    //                             } 
-    //                         }
-    //                     }, [
-    //                         [CalHeatmap.LegendLite, { itemSelector: '#heatmap-legend' }]
-    //                     ]);
-    //                     console.log('Heatmap initialized successfully.');
-    //                 } catch (e) {
-    //                     console.error('Heatmap initialization failed:', e);
-    //                     document.getElementById('heatmap').innerHTML = '<p>Error rendering heatmap: ' + e.message + '</p>';
-    //                 }
-    //             }
-
-    //             // Run after full load with retries
-    //             window.addEventListener('load', function() {
-    //                 console.log('Window loaded at: ' + new Date().toISOString());
-    //                 initializeHeatmap();
-
-    //                 // Retry if CalHeatmap isn't ready
-    //                 var attempts = 0;
-    //                 var maxAttempts = 5;
-    //                 var retryInterval = setInterval(function() {
-    //                     if (typeof CalHeatmap === 'undefined' && attempts < maxAttempts) {
-    //                         console.warn('CalHeatmap not defined, retrying (' + (attempts + 1) + '/' + maxAttempts + ')...');
-    //                         initializeHeatmap();
-    //                         attempts++;
-    //                     } else {
-    //                         clearInterval(retryInterval);
-    //                         if (typeof CalHeatmap === 'undefined') {
-    //                             console.error('CalHeatmap failed to load after all retries.');
-    //                         }
-    //                     }
-    //                 }, 1000);
-    //             });
-    //         </script>";
-    //     }
-
-    //     $output .= '<div class="activity-feed">';
-    //     $output .= '<h4>Recent Activity</h4>';
-    //     foreach (array_slice($all_commits, 0, 10) as $commit) {
-    //         $time_ago = human_time_diff($commit['date'], $current_time) . ' ago';
-    //         $output .= '<div class="commit">';
-    //         $output .= "<img src='{$commit['logo']}' alt='{$commit['type']} mark' width='16' height='16'>";
-    //         $output .= "<span>Pushed to <a href='{$commit['repo_url']}'>{$commit['repo']}</a> on {$commit['type']} ({$commit['username']})</span>";
-    //         $output .= '<span>' . esc_html(substr($commit['message'], 0, 50)) . (strlen($commit['message']) > 50 ? '...' : '') . '</span>';
-    //         $output .= "<span class='time-ago'>{$time_ago}</span>";
-    //         $output .= '</div>';
-    //     }
-    //     $output .= '</div>';
-    //     $output .= '</div>';
-    //     $output .= '</div>';
-
-    //     return $output;
-    // }
-
     public function render_charts_shortcode($atts = null) {
-        if (!is_user_logged_in() || !current_user_can('manage_options')) {
-            return '<p>Please log in to view activity charts.</p>';
-        }
+        // Enqueue scripts globally in enqueue_frontend_scripts, but ensure they're here too for shortcode
+        $cache_buster = time();
+        wp_enqueue_script('d3', plugins_url('assets/js/d3.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '7.8.5', true);
+        wp_enqueue_script('cal-heatmap', plugins_url('assets/js/cal-heatmap.min.js', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", ['d3'], '4.2.1', true);
+        wp_enqueue_style('cal-heatmap-css', plugins_url('assets/css/cal-heatmap.css', GIT_ACTIVITY_CHARTS_PLUGIN_FILE) . "?v=$cache_buster", [], '4.2.1');
 
         $accounts = get_option('git_activity_accounts', []);
         if (empty($accounts)) {
@@ -452,7 +281,7 @@ class GitActivityCharts {
         $heatmap_data = [];
         $current_time = time();
 
-        foreach ($accounts as $index => $account) {
+        foreach ($accounts as $account) {
             $type = $account['type'];
             $username = $account['username'];
             $api_key = $account['api_key'];
@@ -475,18 +304,14 @@ class GitActivityCharts {
                 continue;
             }
 
-            // Determine the logo to use
-            $icon = $custom_logo; // Use custom logo if set
+            $icon = $custom_logo;
             if (!$icon) {
-                // No custom logo; use provider logo based on use_color_logo setting
                 if ($type === 'custom') {
-                    // For custom providers without a custom logo, use a default placeholder or skip
-                    $icon = plugins_url('assets/images/default-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_FILE); // Add a default icon if desired
+                    $icon = plugins_url('assets/images/default-mark-dark.svg', GIT_ACTIVITY_CHARTS_PLUGIN_FILE);
                 } else {
                     $logo_variant = $use_color_logo ? 'color' : 'dark';
                     $logo_filename = "{$type}-mark-{$logo_variant}.svg";
                     $logo_path = "assets/images/{$logo_filename}";
-                    // Check if the preferred variant exists; fall back to the other variant
                     if (!file_exists(GIT_ACTIVITY_CHARTS_PLUGIN_DIR . $logo_path)) {
                         $logo_variant = ($logo_variant === 'color') ? 'dark' : 'color';
                         $logo_filename = "{$type}-mark-{$logo_variant}.svg";
@@ -510,62 +335,97 @@ class GitActivityCharts {
                     'logo' => $icon
                 ];
 
-                // Aggregate for heatmap
                 $day = date('Y-m-d', $date);
                 $heatmap_data[$day] = ($heatmap_data[$day] ?? 0) + 1;
             }
         }
 
-        // Sort commits by date (newest first)
         usort($all_commits, function($a, $b) {
             return $b['date'] - $a['date'];
         });
 
-        // Prepare heatmap data
         $heatmap_json = [];
         foreach ($heatmap_data as $date => $count) {
             $heatmap_json[] = ['date' => $date, 'value' => $count];
         }
 
-        // Render merged heatmap and activity feed
-        $output = '<div id="git-charts">';
-        $output .= "<div class='chart-container'>";
-        $output .= "<h3>Activity Across All Repos</h3>";
-        $output .= "<div id='heatmap'></div>";
-        $output .= "<script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var cal = new CalHeatmap();
-                cal.paint({
-                    data: " . json_encode($heatmap_json) . ",
-                    date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
-                    range: 12,
-                    domain: { type: 'month', label: { text: 'MMM', position: 'top' } },
-                    subDomain: { type: 'day', width: 10, height: 10 },
-                    scale: { color: { range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], type: 'linear' } },
-                    itemSelector: '#heatmap'
-                });
-            });
-        </script>";
+        $max_value = max(array_column($heatmap_json, 'value', 1)) ?: 1;
 
-        // Activity feed
-        $output .= "<div class='activity-feed'>";
-        $output .= "<h4>Recent Activity</h4>";
+        $output = '<div id="git-charts">';
+        $output .= '<div class="chart-container">';
+        $output .= '<h3>Activity Across All Repos</h3>';
+        $output .= '<div id="heatmap" style="min-height: 150px;"></div>';
+
+        if (empty($heatmap_json)) {
+            $output .= '<p class="no-data">No activity data available for the past year.</p>';
+        } else {
+            $output .= '<div id="heatmap-legend" style="margin-top: 10px;"></div>';
+            $output .= "<script type='text/javascript'>
+                console.log('Script loaded at: ' + new Date().toISOString());
+                
+                window.addEventListener('load', function() {
+                    console.log('Window loaded at: ' + new Date().toISOString());
+                    if (typeof d3 === 'undefined') {
+                        console.error('D3.js not loaded.');
+                        document.getElementById('heatmap').innerHTML = '<p>Error: D3.js not loaded.</p>';
+                        return;
+                    }
+                    if (typeof CalHeatmap === 'undefined') {
+                        console.error('CalHeatmap not loaded.');
+                        document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap not loaded.</p>';
+                        return;
+                    }
+
+                    console.log('Initializing heatmap with data:', " . json_encode($heatmap_json) . ");
+                    try {
+                        var cal = new CalHeatmap();
+                        cal.paint({
+                            data: " . json_encode($heatmap_json) . ",
+                            date: { start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) },
+                            range: 12,
+                            domain: { type: 'month', padding: [0, 10, 0, 10], label: { text: 'MMM', position: 'top' } },
+                            subDomain: { type: 'day', width: 12, height: 12, radius: 2 },
+                            scale: { 
+                                color: { 
+                                    range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
+                                    type: 'linear',
+                                    domain: [0, " . $max_value . "]
+                                } 
+                            },
+                            itemSelector: '#heatmap',
+                            tooltip: { 
+                                enabled: true, 
+                                text: function(date, value) { 
+                                    return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
+                                } 
+                            }
+                        }); // Removed LegendLite to avoid plugin error
+                        console.log('Heatmap initialized successfully.');
+                    } catch (e) {
+                        console.error('Heatmap initialization failed:', e);
+                        document.getElementById('heatmap').innerHTML = '<p>Error rendering heatmap: ' + e.message + '</p>';
+                    }
+                });
+            </script>";
+        }
+
+        $output .= '<div class="activity-feed">';
+        $output .= '<h4>Recent Activity</h4>';
         foreach (array_slice($all_commits, 0, 10) as $commit) {
             $time_ago = human_time_diff($commit['date'], $current_time) . ' ago';
-            $output .= "<div class='commit'>";
+            $output .= '<div class="commit">';
             $output .= "<img src='{$commit['logo']}' alt='{$commit['type']} mark' width='16' height='16'>";
             $output .= "<span>Pushed to <a href='{$commit['repo_url']}'>{$commit['repo']}</a> on {$commit['type']} ({$commit['username']})</span>";
-            $output .= "<span>" . esc_html(substr($commit['message'], 0, 50)) . (strlen($commit['message']) > 50 ? '...' : '') . "</span>";
+            $output .= '<span>' . esc_html(substr($commit['message'], 0, 50)) . (strlen($commit['message']) > 50 ? '...' : '') . '</span>';
             $output .= "<span class='time-ago'>{$time_ago}</span>";
-            $output .= "</div>";
+            $output .= '</div>';
         }
-        $output .= "</div>";
-        $output .= "</div>";
+        $output .= '</div>';
+        $output .= '</div>';
         $output .= '</div>';
 
         return $output;
     }
-
 
     private function get_repo_url($type, $username, $repo, $instance_url) {
         $username = esc_attr($username);
