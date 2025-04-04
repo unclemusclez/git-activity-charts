@@ -486,7 +486,7 @@ class GitActivityCharts {
                         data: heatmapData,
                         date: { 
                             start: new Date(new Date().setDate(new Date().getDate() - (52 * 7 - 1))), // 52 weeks ago
-                            weekStartOn: 1 // Monday start
+                            weekStartOn: 1
                         },
                         range: 52,
                         domain: { 
@@ -507,13 +507,7 @@ class GitActivityCharts {
                                 domain: [0, " . $max_value . "]
                             } 
                         },
-                        itemSelector: '#heatmap',
-                        tooltip: { 
-                            enabled: true, 
-                            text: function(date, value) { 
-                                return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
-                            } 
-                        }
+                        itemSelector: '#heatmap'
                     }, function(error) {
                         if (error) {
                             console.error('Step 7: Paint failed', error);
