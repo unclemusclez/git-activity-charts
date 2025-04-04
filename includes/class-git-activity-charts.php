@@ -400,63 +400,142 @@ class GitActivityCharts {
         $output .= '<div id="heatmap-legend" class="cal-heatmap-legend"></div>';
 
         // Single JavaScript block
+        // $output .= "<script type='text/javascript'>
+        //     document.addEventListener('DOMContentLoaded', function() {
+        //         if (typeof d3 === 'undefined' || typeof CalHeatmap === 'undefined') {
+        //             console.error('D3 or CalHeatmap not loaded.');
+        //             document.getElementById('heatmap').innerHTML = '<p>Chart library failed to load.</p>';
+        //             return;
+        //         }
+        //         var cal = new CalHeatmap();
+        //         cal.paint({
+        //             data: " . json_encode($heatmap_json) . ",
+        //             animationDuration: 0,
+        //             date: { 
+        //                 start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), 
+        //                 weekStartOn: 0
+        //             },
+        //             // verticalOrientation: 1,
+        //             range: 13,
+        //             domain: { 
+        //                 type: 'day', 
+        //                 sort:  'desc', 
+        //                 // label: { 
+        //                 //     string: 'MM', 
+        //                 //     position: 'top' 
+        //                 // }
+        //             },
+        //             // subDomain: { 
+        //             //     type: 'ghDay', 
+        //             //     width: 10, 
+        //             //     height: 10, 
+        //             //     radius: 0, 
+        //             //     gutter: 1 
+        //             // },
+        //             scale: { 
+        //                 color: { 
+        //                     range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
+        //                     type: 'linear',
+        //                     domain: [0, " . $max_value . "]
+        //                 } 
+        //             },
+        //             itemSelector: '#heatmap',
+        //             tooltip: { 
+        //                 enabled: true, 
+        //                 text: function(date, value) { 
+        //                     return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
+        //                 } 
+        //             }
+        //         });
+        //         document.getElementById('heatmap-legend').innerHTML = '<span>Less</span>' +
+        //             '<div class=\"legend-square\" style=\"background-color: #ebedf0;\"></div>' +
+        //             '<div class=\"legend-square\" style=\"background-color: #9be9a8;\"></div>' +
+        //             '<div class=\"legend-square\" style=\"background-color: #40c463;\"></div>' +
+        //             '<div class=\"legend-square\" style=\"background-color: #30a14e;\"></div>' +
+        //             '<div class=\"legend-square\" style=\"background-color: #216e39;\"></div>' +
+        //             '<span>More</span>';
+        //     });
+        // </script>";
         $output .= "<script type='text/javascript'>
             document.addEventListener('DOMContentLoaded', function() {
-                if (typeof d3 === 'undefined' || typeof CalHeatmap === 'undefined') {
-                    console.error('D3 or CalHeatmap not loaded.');
-                    document.getElementById('heatmap').innerHTML = '<p>Chart library failed to load.</p>';
+                console.log('Step 1: DOM Loaded');
+                if (typeof d3 === 'undefined') {
+                    console.error('Step 2: D3 not loaded');
+                    document.getElementById('heatmap').innerHTML = '<p>Error: D3.js not loaded.</p>';
                     return;
                 }
-                var cal = new CalHeatmap();
-                cal.paint({
-                    data: " . json_encode($heatmap_json) . ",
-                    animationDuration: 0,
-                    date: { 
-                        start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)), 
-                        weekStartOn: 0
-                    },
-                    // verticalOrientation: 1,
-                    range: 13,
-                    domain: { 
-                        type: 'day', 
-                        sort:  'desc', 
-                        // label: { 
-                        //     string: 'MM', 
-                        //     position: 'top' 
-                        // }
-                    },
-                    // subDomain: { 
-                    //     type: 'ghDay', 
-                    //     width: 10, 
-                    //     height: 10, 
-                    //     radius: 0, 
-                    //     gutter: 1 
-                    // },
-                    scale: { 
-                        color: { 
-                            range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
-                            type: 'linear',
-                            domain: [0, " . $max_value . "]
-                        } 
-                    },
-                    itemSelector: '#heatmap',
-                    tooltip: { 
-                        enabled: true, 
-                        text: function(date, value) { 
-                            return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
-                        } 
-                    }
-                });
-                document.getElementById('heatmap-legend').innerHTML = '<span>Less</span>' +
-                    '<div class=\"legend-square\" style=\"background-color: #ebedf0;\"></div>' +
-                    '<div class=\"legend-square\" style=\"background-color: #9be9a8;\"></div>' +
-                    '<div class=\"legend-square\" style=\"background-color: #40c463;\"></div>' +
-                    '<div class=\"legend-square\" style=\"background-color: #30a14e;\"></div>' +
-                    '<div class=\"legend-square\" style=\"background-color: #216e39;\"></div>' +
-                    '<span>More</span>';
+                console.log('Step 2: D3 loaded, version ' + d3.version);
+                if (typeof CalHeatmap === 'undefined') {
+                    console.error('Step 3: CalHeatmap not loaded');
+                    document.getElementById('heatmap').innerHTML = '<p>Error: CalHeatmap not loaded.</p>';
+                    return;
+                }
+                console.log('Step 3: CalHeatmap loaded');
+                var heatmapData = " . json_encode($heatmap_json) . ";
+                console.log('Step 4: Heatmap Data', heatmapData);
+                if (!Array.isArray(heatmapData) || heatmapData.length === 0) {
+                    console.warn('Step 5: No valid data to display');
+                    document.getElementById('heatmap').innerHTML = '<p>No contribution data available.</p>';
+                    return;
+                }
+                try {
+                    console.log('Step 5: Creating CalHeatmap instance');
+                    var cal = new CalHeatmap();
+                    console.log('Step 6: Painting heatmap');
+                    cal.paint({
+                        data: heatmapData,
+                        date: { 
+                            start: new Date(new Date().setDate(new Date().getDate() - (52 * 7 - 1))), // 52 weeks ago
+                            weekStartOn: 1 // Monday start
+                        },
+                        range: 52,
+                        domain: { 
+                            type: 'week',
+                            gutter: 2,
+                            label: { text: 'W', position: 'top' }
+                        },
+                        subDomain: { 
+                            type: 'day', 
+                            width: 10, 
+                            height: 10, 
+                            gutter: 2 
+                        },
+                        scale: { 
+                            color: { 
+                                range: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'], 
+                                type: 'linear',
+                                domain: [0, " . $max_value . "]
+                            } 
+                        },
+                        itemSelector: '#heatmap',
+                        tooltip: { 
+                            enabled: true, 
+                            text: function(date, value) { 
+                                return value + ' contribution' + (value === 1 ? '' : 's') + ' on ' + date.toLocaleDateString(); 
+                            } 
+                        }
+                    }, function(error) {
+                        if (error) {
+                            console.error('Step 7: Paint failed', error);
+                            document.getElementById('heatmap').innerHTML = '<p>Heatmap failed to render: ' + error.message + '</p>';
+                        } else {
+                            console.log('Step 7: Heatmap rendered successfully');
+                        }
+                    });
+                    console.log('Step 8: Setting legend');
+                    document.getElementById('heatmap-legend').innerHTML = '<span>Less</span>' +
+                        '<div class=\"legend-square\" style=\"background-color: #ebedf0;\"></div>' +
+                        '<div class=\"legend-square\" style=\"background-color: #9be9a8;\"></div>' +
+                        '<div class=\"legend-square\" style=\"background-color: #40c463;\"></div>' +
+                        '<div class=\"legend-square\" style=\"background-color: #30a14e;\"></div>' +
+                        '<div class=\"legend-square\" style=\"background-color: #216e39;\"></div>' +
+                        '<span>More</span>';
+                } catch (e) {
+                    console.error('Step 6: Exception during paint', e);
+                    document.getElementById('heatmap').innerHTML = '<p>Heatmap error: ' + e.message + '</p>';
+                }
             });
         </script>";
-
         // Activity Feed
         $output .= '<div class="activity-feed">';
         $output .= '<h4>Recent Activity</h4>';
