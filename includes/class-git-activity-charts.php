@@ -485,14 +485,14 @@ class GitActivityCharts {
                     cal.paint({
                         data: heatmapData,
                         date: { 
-                            start: new Date(new Date().setDate(new Date().getDate() - (52 * 7 - 1))), // 52 weeks ago
+                            start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
                             weekStartOn: 1
                         },
-                        range: 52,
+                        range: 12,
                         domain: { 
-                            type: 'week',
+                            type: 'month',
                             gutter: 2,
-                            label: { text: 'W', position: 'top' }
+                            label: { text: 'MMM', position: 'top' }
                         },
                         subDomain: { 
                             type: 'day', 
